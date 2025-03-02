@@ -1,7 +1,11 @@
 name: dio_flow
-description: "A new Flutter package project."
-version: 0.0.1
-homepage:
+description: "A Flutter package providing an enhanced Dio client with built-in support for caching, retry, authentication, pagination utilities and standardized JSON handling."
+version: 1.0.0
+homepage: https://github.com/Moein-dev/dio_flow
+repository: https://github.com/Moein-dev/dio_flow
+issue_tracker: https://github.com/Moein-dev/dio_flow/issues
+documentation: https://github.com/Moein-dev/dio_flow/blob/main/README.md
+license: MIT
 
 environment:
   sdk: ^3.7.0
