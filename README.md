@@ -6,6 +6,7 @@
 
 A powerful Flutter package that enhances Dio HTTP client with built-in support for caching, authentication, pagination, error handling, and standardized JSON utilities.
 
+
 ## 📋 Table of Contents
 
 - [Features](#-features)
@@ -21,6 +22,8 @@ A powerful Flutter package that enhances Dio HTTP client with built-in support f
 - [Error Handling](#-error-handling)
 - [Caching](#-caching)
 - [Logging](#-logging)
+- [Interceptors](#-interceptors)
+- [Available Utilities](#-available-utilities)
 - [Advanced Usage](#-advanced-usage)
 - [Troubleshooting](#-troubleshooting)
 - [Contributing](#-contributing)
@@ -692,6 +695,382 @@ ApiClient.setLogger((message, {LogLevel? level}) {
       break;
   }
 });
+```
+
+## 🔗 Interceptors
+
+dio_flow comes with several built-in interceptors to enhance your API requests.
+
+### Authentication Interceptor
+
+Automatically adds authentication tokens to requests.
+
+```dart
+// Enable authentication interceptor (enabled by default)
+ApiClient.useAuthInterceptor(true);
+
+// The interceptor automatically adds the token to requests marked with requireAuth
+final response = await DioRequestHandler.get(
+  'protected-endpoint',
+  requestOptions: RequestOptionsModel(requireAuth: true),
+);
+
+// Under the hood, the interceptor adds the following header:
+// headers['Authorization'] = 'Bearer ${await TokenManager.getAccessToken()}';
+```
+
+### Retry Interceptor
+
+Automatically retries failed requests based on specified conditions.
+
+```dart
+// Configure retry behavior globally
+ApiClient.configureRetry(
+  retryCount: 3,                          // Maximum retry attempts
+  retryInterval: Duration(seconds: 2),    // Base interval between retries
+  retryStatusCodes: [408, 500, 502, 503], // HTTP status codes to retry on
+  exponentialBackoff: true,               // Use exponential backoff for intervals
+);
+
+// Retry settings can be overridden per request
+final response = await DioRequestHandler.get(
+  'unstable-endpoint',
+  requestOptions: RequestOptionsModel(
+    retryCount: 5,                       // Override default retry count
+    retryInterval: Duration(seconds: 1), // Override default retry interval
+  ),
+);
+```
+
+### Cache Interceptor
+
+Caches responses and serves them when the same request is made again.
+
+```dart
+// Configure caching globally
+ApiClient.configureCaching(
+  defaultCacheDuration: Duration(minutes: 30), // Default TTL for cached responses
+  maxCacheSize: 50,                            // Maximum number of cached responses
+  excludedEndpoints: ['auth/login', 'users/create'], // Endpoints that should never be cached
+);
+
+// Cache settings can be specified per request
+final response = await DioRequestHandler.get(
+  'frequently-accessed-data',
+  requestOptions: RequestOptionsModel(
+    cacheResponse: true,                 // Enable caching for this request
+    cacheTTL: Duration(hours: 2),        // Override default cache TTL
+    cacheKey: 'custom-cache-key',        // Use a custom key for this cache entry
+    forceRefresh: false,                 // If true, ignore cache and make a new request
+  ),
+);
+
+// Clear cache for an endpoint
+await CacheManager.clearCacheForEndpoint('users');
+```
+
+### Logging Interceptor
+
+Logs all requests, responses, and errors.
+
+```dart
+// Configure logging
+ApiClient.configureLogging(
+  level: LogLevel.info,                // Log level (error, warning, info, debug)
+  includeRequestBody: true,            // Log request bodies
+  includeResponseBody: true,           // Log response bodies
+  includeCurlCommand: true,            // Include equivalent cURL commands
+  includeRequestHeaders: true,         // Log request headers
+  includeResponseHeaders: true,        // Log response headers
+  maskSensitiveHeaders: ['Authorization', 'Cookie'], // Mask sensitive headers in logs
+  logFormat: '[{method}] {url} - {statusCode}',     // Custom log format
+);
+
+// Custom logger
+ApiClient.setCustomLogger((log, {LogLevel? level}) {
+  // Send logs to a custom logging service
+  if (level == LogLevel.error) {
+    ErrorReportingService.capture(log);
+  }
+  
+  // Also print to console
+  print('${level?.name.toUpperCase() ?? 'LOG'}: $log');
+});
+```
+
+### Rate Limit Interceptor
+
+Prevents overwhelming the API with too many requests.
+
+```dart
+// Configure rate limiting
+ApiClient.configureRateLimiting(
+  requestsPerTimeWindow: 30,          // Maximum requests allowed
+  timeWindow: Duration(minutes: 1),   // Time window for rate limiting
+  perEndpoint: true,                  // Apply rate limit per endpoint instead of globally
+);
+
+// The rate limit interceptor will queue requests that exceed the limit
+// and execute them once the time window resets
+```
+
+### Connectivity Interceptor
+
+Handles request attempts during no connectivity.
+
+```dart
+// Configure connectivity handling
+ApiClient.configureConnectivity(
+  retryOnConnectivityEstablished: true,  // Auto-retry requests that failed due to connectivity
+  showConnectivityNotifications: true,   // Show notifications when connectivity changes
+  onConnectivityChanged: (connected) {
+    // Handle connectivity changes
+    print('Connection status changed: ${connected ? 'online' : 'offline'}');
+  },
+);
+```
+
+## 🧰 Available Utilities
+
+dio_flow provides several utility classes to help with common tasks.
+
+### JsonUtils
+
+Utilities for working with JSON data.
+
+```dart
+// Safe JSON parsing with error handling
+final jsonString = '{"name": "John", "age": 30}';
+final json = JsonUtils.tryParseJson(jsonString);
+if (json == null) {
+  print('Failed to parse JSON');
+} else {
+  print('Parsed JSON: $json');
+}
+
+// Get nested values with dot notation
+final data = {'user': {'profile': {'name': 'John'}}};
+final name = JsonUtils.getNestedValue(
+  data,                 // The JSON object
+  'user.profile.name',  // Path to the desired value
+  defaultValue: 'N/A',  // Default value if path doesn't exist
+);
+
+// Check if a path exists in JSON
+final hasEmail = JsonUtils.hasPath(data, 'user.profile.email'); // false
+
+// Extract multiple values at once
+final extracted = JsonUtils.extractValues(data, [
+  'user.profile.name',
+  'user.profile.age',
+  'user.settings.theme'
+], defaultValue: null);
+// Returns: {'user.profile.name': 'John', 'user.profile.age': null, 'user.settings.theme': null}
+
+// Convert map keys to consistent format
+final normalized = JsonUtils.normalizeJsonKeys(
+  {'First_Name': 'John', 'LAST-NAME': 'Doe'},
+  keysToLowerCase: true,   // Convert to lowercase
+  separatorToUse: '_',     // Use snake_case format
+);
+// Returns: {'first_name': 'John', 'last_name': 'Doe'}
+
+// Convert string values to appropriate types
+final typed = JsonUtils.convertStringValues({
+  'count': '42',
+  'active': 'true',
+  'price': '29.99',
+});
+// Returns: {'count': 42, 'active': true, 'price': 29.99}
+
+// Flatten nested JSON
+final flattened = JsonUtils.flattenJson({
+  'user': {
+    'profile': {
+      'name': 'John',
+      'age': 30
+    }
+  }
+});
+// Returns: {'user.profile.name': 'John', 'user.profile.age': 30}
+```
+
+### DateTimeUtils
+
+Utilities for working with dates and times.
+
+```dart
+// Parse date strings safely
+final date = DateTimeUtils.tryParse('2023-05-15T14:30:00Z');
+if (date != null) {
+  print('Parsed date: $date');
+}
+
+// Format date to string
+final formattedDate = DateTimeUtils.format(
+  DateTime.now(),
+  format: 'yyyy-MM-dd HH:mm:ss',  // Custom format
+);
+
+// Get relative time
+final relativeTime = DateTimeUtils.getRelativeTime(
+  DateTime.now().subtract(Duration(minutes: 30)),
+);
+// Returns: '30 minutes ago'
+
+// Check if date is in the past
+final isPast = DateTimeUtils.isPast(
+  DateTime.now().subtract(Duration(days: 1)),
+);
+
+// Get difference in human readable format
+final difference = DateTimeUtils.getHumanReadableDifference(
+  DateTime.now(),
+  DateTime.now().add(Duration(days: 5, hours: 2)),
+);
+// Returns: '5 days and 2 hours'
+```
+
+### StringUtils
+
+Utilities for working with strings.
+
+```dart
+// Capitalize first letter
+final capitalized = StringUtils.capitalize('hello world');
+// Returns: 'Hello world'
+
+// Convert to camel case
+final camelCase = StringUtils.toCamelCase('user_first_name');
+// Returns: 'userFirstName'
+
+// Convert to snake case
+final snakeCase = StringUtils.toSnakeCase('userFirstName');
+// Returns: 'user_first_name'
+
+// Truncate string with ellipsis
+final truncated = StringUtils.truncate(
+  'This is a very long string that needs to be truncated',
+  maxLength: 20,
+);
+// Returns: 'This is a very long...'
+
+// Check if string is valid JSON
+final isJson = StringUtils.isValidJson('{"name": "John"}');
+
+// Generate a random string
+final random = StringUtils.generateRandomString(
+  length: 10,
+  includeNumbers: true,
+  includeSpecialChars: false,
+);
+```
+
+### PaginationUtils
+
+Advanced utilities for pagination.
+
+```dart
+// Fetch all pages at once
+final allData = await PaginationUtils.fetchAllPages(
+  'posts',
+  parameters: {'category': 'tech'},    // Base query parameters
+  pageParamName: 'page',               // Name of the page parameter
+  perPageParamName: 'per_page',        // Name of the per-page parameter
+  startPage: 1,                        // Starting page number
+  itemsPerPage: 20,                    // Items per page
+  maxPages: 10,                        // Maximum pages to fetch (optional)
+  // Custom function to check if more pages exist based on response
+  hasMorePages: (response) {
+    final total = response.meta['total'] as int;
+    final current = response.meta['current_page'] as int;
+    final perPage = response.meta['per_page'] as int;
+    return current * perPage < total;
+  },
+);
+
+// Process pages one by one with a callback
+await PaginationUtils.processAllPages(
+  'users',
+  parameters: {'status': 'active'},
+  pageParamName: 'page',
+  onPageReceived: (pageData, pageNumber) async {
+    // Process each page as it arrives
+    print('Received page $pageNumber with ${pageData.length} items');
+    await processUserBatch(pageData);
+    // Return true to continue fetching, false to stop
+    return pageNumber < 5;
+  },
+);
+
+// Create a scroll pagination controller for Flutter widgets
+final controller = PaginationUtils.createScrollPaginationController(
+  endpoint: 'products',
+  parameters: {'category': 'electronics'},
+  itemsPerPage: 20,
+  // Optional: Transform response data to your model
+  itemBuilder: (item) => Product.fromJson(item),
+);
+
+// Use with ListView
+ListView.builder(
+  controller: controller.scrollController,
+  itemCount: controller.items.length + (controller.isLoading ? 1 : 0),
+  itemBuilder: (context, index) {
+    if (index == controller.items.length) {
+      return CircularProgressIndicator();
+    }
+    final product = controller.items[index];
+    return ProductCard(product: product);
+  },
+);
+```
+
+### RequestUtils
+
+Utilities for working with API requests.
+
+```dart
+// Build URL with query parameters
+final url = RequestUtils.buildUrl(
+  'https://api.example.com/users',
+  {'search': 'john', 'sort': 'name'},
+);
+// Returns: 'https://api.example.com/users?search=john&sort=name'
+
+// Create form data with files
+final formData = await RequestUtils.createFormData({
+  'name': 'John Doe',
+  'avatar': FileItem(path: '/path/to/image.jpg', filename: 'avatar.jpg'),
+  'documents': [
+    FileItem(path: '/path/to/doc1.pdf', filename: 'doc1.pdf'),
+    FileItem(path: '/path/to/doc2.pdf', filename: 'doc2.pdf'),
+  ],
+});
+
+// Validate request parameters
+final errors = RequestUtils.validateParameters(
+  {
+    'email': 'john@example',
+    'age': '25',
+    'role': null,
+  },
+  {
+    'email': (value) => value.contains('@') && value.contains('.'),
+    'age': (value) => int.tryParse(value) != null && int.parse(value) >= 18,
+    'role': (value) => value != null,
+  },
+);
+// Returns: {'email': false, 'role': false}
+
+// Retry a request with custom logic
+final response = await RequestUtils.retryRequest(
+  () => DioRequestHandler.get('unstable-endpoint'),
+  retryIf: (error) => error is DioException && 
+      [DioExceptionType.connectionTimeout, DioExceptionType.receiveTimeout].contains(error.type),
+  maxRetries: 3,
+  delayBetweenRetries: Duration(seconds: 2),
+);
 ```
 
 ## 🔧 Advanced Usage
