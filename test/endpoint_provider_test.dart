@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dio_flow/dio_flow.dart';
-import 'package:dio_flow/src/base/api_endpoint_interface.dart';
 
 void main() {
   group('EndpointProvider', () {

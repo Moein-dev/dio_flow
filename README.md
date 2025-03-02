@@ -49,7 +49,7 @@ Add this to your package's pubspec.yaml file:
 
 ```yaml
 dependencies:
-  dio_flow: ^1.0.0
+  dio_flow: ^1.1.0
 ```
 
 Then run:
@@ -66,14 +66,20 @@ flutter pub get
 import 'package:dio_flow/dio_flow.dart';
 import 'package:flutter/material.dart';
 
-void main() {
-  // Initialize the API client configuration
+void main() async {
+  // Initialize the Flutter binding
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Step 1: Initialize the API client configuration
   DioFlowConfig.initialize(
     baseUrl: 'https://api.example.com',
     connectTimeout: const Duration(seconds: 30),
     receiveTimeout: const Duration(seconds: 30),
     sendTimeout: const Duration(seconds: 30),
   );
+  
+  // Step 2: Initialize ApiClient (important!)
+  await ApiClient.initialize();
   
   runApp(MyApp());
 }
@@ -86,7 +92,7 @@ The API client is the core of dio_flow. It provides a simplified interface for m
 ### Initialization
 
 ```dart
-// Initialize with default configuration
+// Step 1: Initialize DioFlowConfig with default configuration
 DioFlowConfig.initialize(
   baseUrl: 'https://api.example.com',
 );
@@ -99,19 +105,19 @@ DioFlowConfig.initialize(
   sendTimeout: const Duration(seconds: 10),
 );
 
-// Initialize with custom headers
-DioFlowConfig.initialize(
-  baseUrl: 'https://api.example.com',
-  headers: {
-    'Accept': 'application/json',
-    'User-Agent': 'MyApp/1.0.0',
-  },
-);
+// Step 2: Initialize ApiClient (this step is required)
+await ApiClient.initialize();
 ```
 
 ### Custom Configuration
 
 ```dart
+// Add custom headers to all requests
+ApiClient.dio.options.headers = {
+  'Accept': 'application/json',
+  'User-Agent': 'MyApp/1.0.0',
+};
+
 // Add interceptors
 final logInterceptor = LogInterceptor(
   requestBody: true,
@@ -149,7 +155,21 @@ EndpointProvider.instance.registerAll({
 ```dart
 // Get an endpoint with path parameters
 final userEndpoint = EndpointProvider.instance.getEndpoint('user');
-final userPath = userEndpoint.getPath({'id': '123'}); // Returns '/api/users/123'
+
+// Access the path property
+final basePath = userEndpoint.path; // Returns '/api/users/{id}'
+
+// For replacing path parameters, you'll need to implement your own logic
+// Example implementation:
+String resolvePath(String path, Map<String, dynamic> params) {
+  String result = path;
+  params.forEach((key, value) {
+    result = result.replaceAll('{$key}', value.toString());
+  });
+  return result;
+}
+
+final userPath = resolvePath(userEndpoint.path, {'id': '123'}); // Returns '/api/users/123'
 ```
 
 ### Custom Endpoint Classes
@@ -275,7 +295,7 @@ if (response is SuccessResponseModel) {
   final meta = response.meta; // Pagination metadata if available
   
   print('Got ${data.length} users');
-  print('Total users: ${meta?['total']}');
+  print('Total users: ${meta?.total}');
 }
 ```
 
@@ -316,11 +336,8 @@ TokenManager.setTokens(
 // Get the current access token
 final token = await TokenManager.getAccessToken();
 
-// Check if the user is authenticated
-final isAuthenticated = await TokenManager.isAuthenticated();
-
 // Clear tokens (logout)
-await TokenManager.clearTokens();
+TokenManager.clearTokens();
 ```
 
 ### Custom Token Refresh
@@ -351,78 +368,28 @@ TokenManager.setTokenRefreshFunction((refreshToken) async {
 
 dio_flow provides utilities to simplify working with paginated APIs.
 
-### Automatic Pagination
+### Using PaginationUtils
 
 ```dart
+// Check if there are more pages available
+bool hasMore = PaginationUtils.hasMorePages(response, pageSize);
+
 // Fetch all pages automatically
-final response = await PaginationUtils.fetchAllPages(
-  'posts',
+final allPagesResponse = await PaginationUtils.fetchAllPages(
+  endpoint: 'posts',
   parameters: {'status': 'published'},
   pageParamName: 'page',
   perPageParamName: 'per_page',
-  startPage: 1,
-  itemsPerPage: 20,
-);
-
-if (response is SuccessResponseModel) {
-  final allPosts = response.data as List;
-  print('Fetched ${allPosts.length} posts across multiple pages');
-}
-```
-
-### Manual Pagination
-
-```dart
-// Create a pagination helper
-final helper = PaginationHelper(
-  endpoint: 'products',
-  pageParamName: 'page',
-  perPageParamName: 'limit',
-  startPage: 1,
-  itemsPerPage: 10,
-  // Additional fixed parameters
-  additionalParams: {'category': 'electronics'},
-);
-
-// Fetch the first page
-final firstPageResponse = await helper.fetchPage();
-
-if (firstPageResponse is SuccessResponseModel) {
-  // Display the first page of data
-  displayProducts(firstPageResponse.data);
-  
-  // Check if there are more pages
-  if (helper.hasMorePages) {
-    // Load the next page when needed
-    final nextPageResponse = await helper.fetchNextPage();
-    
-    if (nextPageResponse is SuccessResponseModel) {
-      // Append the new data
-      appendProducts(nextPageResponse.data);
+  dataExtractor: (response) {
+    // Extract the data array from the response
+    if (response is SuccessResponseModel) {
+      return response.data;
     }
-  }
-}
-```
-
-### Custom Pagination Metadata
-
-```dart
-// For APIs with custom pagination metadata structure
-final helper = PaginationHelper(
-  endpoint: 'articles',
-  pageParamName: 'page',
-  perPageParamName: 'size',
-  startPage: 1,
-  itemsPerPage: 10,
-  metaMapping: (responseData) {
-    // Extract custom pagination metadata
-    final meta = responseData['_meta'];
-    return PaginationMeta(
-      currentPage: meta['currentPage'],
-      lastPage: meta['totalPages'],
-      perPage: meta['itemsPerPage'],
-      total: meta['totalItems'],
-    );
+    return [];
+  },
+  stopCondition: (responseData) {
+    // Define when to stop fetching more pages
+    return responseData.isEmpty || responseData.length < 20;
   },
 );
 ```
@@ -464,10 +431,10 @@ final data = {
 };
 
 // Get nested values safely
-final name = JsonUtils.getNestedValue(data, 'user.profile.name');
+final name = JsonUtils.getNestedValue(data, 'user.profile.name', '');
 print(name); // John Doe
 
-final city = JsonUtils.getNestedValue(data, 'user.profile.details.location.city');
+final city = JsonUtils.getNestedValue(data, 'user.profile.details.location.city', '');
 print(city); // New York
 
 // Provide default values for missing paths
@@ -490,64 +457,39 @@ final weirdJson = {
   }
 };
 
-// Convert to camelCase (default)
-final camelCased = JsonUtils.normalizeJsonKeys(weirdJson);
-print(camelCased);
-// Output:
-// {
-//   'firstName': 'John',
-//   'lastName': 'Doe',
-//   'emailAddress': 'john@example.com',
-//   'phoneNumber': '123-456-7890',
-//   'userSettings': {
-//     'themePreference': 'dark',
-//     'notificationsEnabled': true
-//   }
-// }
-
-// Convert to snake_case
-final snakeCased = JsonUtils.normalizeJsonKeys(
-  weirdJson,
-  keysToLowerCase: true,
-  separatorToUse: '_',
-);
-print(snakeCased);
+// Convert all keys to lowercase
+final normalized = JsonUtils.normalizeJsonKeys(weirdJson);
+print(normalized);
 // Output:
 // {
 //   'first_name': 'John',
-//   'last_name': 'Doe',
+//   'last-name': 'Doe',
 //   'email_address': 'john@example.com',
 //   'phone_number': '123-456-7890',
-//   'user_settings': {
+//   'user-settings': {
 //     'theme_preference': 'dark',
 //     'notifications_enabled': true
 //   }
 // }
+
+// Keep original case
+final preservedCase = JsonUtils.normalizeJsonKeys(
+  weirdJson,
+  keysToLowerCase: false,
+);
+print(preservedCase);
+// Keys remain as they were in the original
 ```
 
-### Advanced Type Mapping
+### JSON Encoding
 
 ```dart
-// Convert JSON data to specific types
-final jsonData = {
-  'count': '42',      // String that should be an int
-  'price': '29.99',   // String that should be a double
-  'active': 'true',   // String that should be a boolean
-  'created': '2023-05-15T14:30:00Z' // String that should be a DateTime
-};
+// Safely encode an object to JSON
+final map = {'name': 'John', 'age': 30};
+final jsonString = JsonUtils.tryEncodeJson(map);
 
-// Map types automatically
-final convertedData = JsonUtils.mapJsonTypes(jsonData, {
-  'count': int,
-  'price': double,
-  'active': bool,
-  'created': DateTime,
-});
-
-print(convertedData['count'].runtimeType);    // int
-print(convertedData['price'].runtimeType);    // double
-print(convertedData['active'].runtimeType);   // bool
-print(convertedData['created'].runtimeType);  // DateTime
+// With pretty formatting
+final prettyJson = JsonUtils.tryEncodeJson(map, pretty: true);
 ```
 
 ## ❌ Error Handling
@@ -586,23 +528,18 @@ Future<void> fetchData() async {
     } else {
       final error = response as FailedResponseModel;
       
-      // Handle specific error codes
-      switch (error.statusCode) {
-        case 401:
+      // Handle by error type
+      switch (error.errorType) {
+        case ErrorType.authentication:
           handleUnauthorized();
           break;
-        case 403:
+        case ErrorType.authorization:
           handleForbidden();
           break;
-        case 404:
+        case ErrorType.notFound:
           handleNotFound();
           break;
-        case 429:
-          handleRateLimited();
-          break;
-        case 500:
-        case 502:
-        case 503:
+        case ErrorType.server:
           handleServerError();
           break;
         default:
@@ -628,7 +565,7 @@ Future<void> fetchData() async {
 
 ## 💾 Caching
 
-dio_flow includes a built-in caching system for API responses.
+dio_flow includes a built-in caching system for API responses. This system is automatically managed through the CacheInterceptor.
 
 ### Basic Caching
 
@@ -646,436 +583,37 @@ final response = await DioRequestHandler.get(
 ### Cache Management
 
 ```dart
-// Clear the entire cache
-await CacheManager.clearCache();
+// Clear the cache by resetting the ApiClient (both DioFlowConfig and ApiClient)
+DioFlowConfig.reset();
+ApiClient.reset();
 
-// Clear cache for a specific endpoint
-await CacheManager.clearCacheForEndpoint('users');
-
-// Check if a response is cached
-final isCached = await CacheManager.hasCache('users');
+// Reinitialize after clearing
+DioFlowConfig.initialize(baseUrl: 'https://api.example.com');
+await ApiClient.initialize();
 ```
 
 ## 📝 Logging
 
-dio_flow includes comprehensive logging features.
+dio_flow includes comprehensive logging features through Dio's built-in LogInterceptor.
 
 ### Basic Logging
 
 ```dart
-// Enable logging with cURL commands
-ApiClient.enableLogging(
-  includeRequestBody: true,
-  includeResponseBody: true,
-  includeCurlCommands: true,
-  logLevel: LogLevel.info,
+// Add a log interceptor to see detailed request/response information
+ApiClient.dio.interceptors.add(
+  LogInterceptor(
+    requestBody: true,
+    responseBody: true,
+    logPrint: (obj) => print('DIO: $obj'),
+  ),
 );
-```
-
-### Custom Logger
-
-```dart
-// Set up a custom logger
-ApiClient.setLogger((message, {LogLevel? level}) {
-  switch (level) {
-    case LogLevel.error:
-      print('❌ ERROR: $message');
-      break;
-    case LogLevel.warning:
-      print('⚠️ WARNING: $message');
-      break;
-    case LogLevel.info:
-      print('ℹ️ INFO: $message');
-      break;
-    case LogLevel.debug:
-      print('🔍 DEBUG: $message');
-      break;
-    default:
-      print('📝 LOG: $message');
-      break;
-  }
-});
 ```
 
 ## 🔗 Interceptors
 
-dio_flow comes with several built-in interceptors to enhance your API requests.
+dio_flow comes with several built-in interceptors that are automatically added when you initialize ApiClient.
 
-### Authentication Interceptor
-
-Automatically adds authentication tokens to requests.
-
-```dart
-// Enable authentication interceptor (enabled by default)
-ApiClient.useAuthInterceptor(true);
-
-// The interceptor automatically adds the token to requests marked with requireAuth
-final response = await DioRequestHandler.get(
-  'protected-endpoint',
-  requestOptions: RequestOptionsModel(requireAuth: true),
-);
-
-// Under the hood, the interceptor adds the following header:
-// headers['Authorization'] = 'Bearer ${await TokenManager.getAccessToken()}';
-```
-
-### Retry Interceptor
-
-Automatically retries failed requests based on specified conditions.
-
-```dart
-// Configure retry behavior globally
-ApiClient.configureRetry(
-  retryCount: 3,                          // Maximum retry attempts
-  retryInterval: Duration(seconds: 2),    // Base interval between retries
-  retryStatusCodes: [408, 500, 502, 503], // HTTP status codes to retry on
-  exponentialBackoff: true,               // Use exponential backoff for intervals
-);
-
-// Retry settings can be overridden per request
-final response = await DioRequestHandler.get(
-  'unstable-endpoint',
-  requestOptions: RequestOptionsModel(
-    retryCount: 5,                       // Override default retry count
-    retryInterval: Duration(seconds: 1), // Override default retry interval
-  ),
-);
-```
-
-### Cache Interceptor
-
-Caches responses and serves them when the same request is made again.
-
-```dart
-// Configure caching globally
-ApiClient.configureCaching(
-  defaultCacheDuration: Duration(minutes: 30), // Default TTL for cached responses
-  maxCacheSize: 50,                            // Maximum number of cached responses
-  excludedEndpoints: ['auth/login', 'users/create'], // Endpoints that should never be cached
-);
-
-// Cache settings can be specified per request
-final response = await DioRequestHandler.get(
-  'frequently-accessed-data',
-  requestOptions: RequestOptionsModel(
-    cacheResponse: true,                 // Enable caching for this request
-    cacheTTL: Duration(hours: 2),        // Override default cache TTL
-    cacheKey: 'custom-cache-key',        // Use a custom key for this cache entry
-    forceRefresh: false,                 // If true, ignore cache and make a new request
-  ),
-);
-
-// Clear cache for an endpoint
-await CacheManager.clearCacheForEndpoint('users');
-```
-
-### Logging Interceptor
-
-Logs all requests, responses, and errors.
-
-```dart
-// Configure logging
-ApiClient.configureLogging(
-  level: LogLevel.info,                // Log level (error, warning, info, debug)
-  includeRequestBody: true,            // Log request bodies
-  includeResponseBody: true,           // Log response bodies
-  includeCurlCommand: true,            // Include equivalent cURL commands
-  includeRequestHeaders: true,         // Log request headers
-  includeResponseHeaders: true,        // Log response headers
-  maskSensitiveHeaders: ['Authorization', 'Cookie'], // Mask sensitive headers in logs
-  logFormat: '[{method}] {url} - {statusCode}',     // Custom log format
-);
-
-// Custom logger
-ApiClient.setCustomLogger((log, {LogLevel? level}) {
-  // Send logs to a custom logging service
-  if (level == LogLevel.error) {
-    ErrorReportingService.capture(log);
-  }
-  
-  // Also print to console
-  print('${level?.name.toUpperCase() ?? 'LOG'}: $log');
-});
-```
-
-### Rate Limit Interceptor
-
-Prevents overwhelming the API with too many requests.
-
-```dart
-// Configure rate limiting
-ApiClient.configureRateLimiting(
-  requestsPerTimeWindow: 30,          // Maximum requests allowed
-  timeWindow: Duration(minutes: 1),   // Time window for rate limiting
-  perEndpoint: true,                  // Apply rate limit per endpoint instead of globally
-);
-
-// The rate limit interceptor will queue requests that exceed the limit
-// and execute them once the time window resets
-```
-
-### Connectivity Interceptor
-
-Handles request attempts during no connectivity.
-
-```dart
-// Configure connectivity handling
-ApiClient.configureConnectivity(
-  retryOnConnectivityEstablished: true,  // Auto-retry requests that failed due to connectivity
-  showConnectivityNotifications: true,   // Show notifications when connectivity changes
-  onConnectivityChanged: (connected) {
-    // Handle connectivity changes
-    print('Connection status changed: ${connected ? 'online' : 'offline'}');
-  },
-);
-```
-
-## 🧰 Available Utilities
-
-dio_flow provides several utility classes to help with common tasks.
-
-### JsonUtils
-
-Utilities for working with JSON data.
-
-```dart
-// Safe JSON parsing with error handling
-final jsonString = '{"name": "John", "age": 30}';
-final json = JsonUtils.tryParseJson(jsonString);
-if (json == null) {
-  print('Failed to parse JSON');
-} else {
-  print('Parsed JSON: $json');
-}
-
-// Get nested values with dot notation
-final data = {'user': {'profile': {'name': 'John'}}};
-final name = JsonUtils.getNestedValue(
-  data,                 // The JSON object
-  'user.profile.name',  // Path to the desired value
-  defaultValue: 'N/A',  // Default value if path doesn't exist
-);
-
-// Check if a path exists in JSON
-final hasEmail = JsonUtils.hasPath(data, 'user.profile.email'); // false
-
-// Extract multiple values at once
-final extracted = JsonUtils.extractValues(data, [
-  'user.profile.name',
-  'user.profile.age',
-  'user.settings.theme'
-], defaultValue: null);
-// Returns: {'user.profile.name': 'John', 'user.profile.age': null, 'user.settings.theme': null}
-
-// Convert map keys to consistent format
-final normalized = JsonUtils.normalizeJsonKeys(
-  {'First_Name': 'John', 'LAST-NAME': 'Doe'},
-  keysToLowerCase: true,   // Convert to lowercase
-  separatorToUse: '_',     // Use snake_case format
-);
-// Returns: {'first_name': 'John', 'last_name': 'Doe'}
-
-// Convert string values to appropriate types
-final typed = JsonUtils.convertStringValues({
-  'count': '42',
-  'active': 'true',
-  'price': '29.99',
-});
-// Returns: {'count': 42, 'active': true, 'price': 29.99}
-
-// Flatten nested JSON
-final flattened = JsonUtils.flattenJson({
-  'user': {
-    'profile': {
-      'name': 'John',
-      'age': 30
-    }
-  }
-});
-// Returns: {'user.profile.name': 'John', 'user.profile.age': 30}
-```
-
-### DateTimeUtils
-
-Utilities for working with dates and times.
-
-```dart
-// Parse date strings safely
-final date = DateTimeUtils.tryParse('2023-05-15T14:30:00Z');
-if (date != null) {
-  print('Parsed date: $date');
-}
-
-// Format date to string
-final formattedDate = DateTimeUtils.format(
-  DateTime.now(),
-  format: 'yyyy-MM-dd HH:mm:ss',  // Custom format
-);
-
-// Get relative time
-final relativeTime = DateTimeUtils.getRelativeTime(
-  DateTime.now().subtract(Duration(minutes: 30)),
-);
-// Returns: '30 minutes ago'
-
-// Check if date is in the past
-final isPast = DateTimeUtils.isPast(
-  DateTime.now().subtract(Duration(days: 1)),
-);
-
-// Get difference in human readable format
-final difference = DateTimeUtils.getHumanReadableDifference(
-  DateTime.now(),
-  DateTime.now().add(Duration(days: 5, hours: 2)),
-);
-// Returns: '5 days and 2 hours'
-```
-
-### StringUtils
-
-Utilities for working with strings.
-
-```dart
-// Capitalize first letter
-final capitalized = StringUtils.capitalize('hello world');
-// Returns: 'Hello world'
-
-// Convert to camel case
-final camelCase = StringUtils.toCamelCase('user_first_name');
-// Returns: 'userFirstName'
-
-// Convert to snake case
-final snakeCase = StringUtils.toSnakeCase('userFirstName');
-// Returns: 'user_first_name'
-
-// Truncate string with ellipsis
-final truncated = StringUtils.truncate(
-  'This is a very long string that needs to be truncated',
-  maxLength: 20,
-);
-// Returns: 'This is a very long...'
-
-// Check if string is valid JSON
-final isJson = StringUtils.isValidJson('{"name": "John"}');
-
-// Generate a random string
-final random = StringUtils.generateRandomString(
-  length: 10,
-  includeNumbers: true,
-  includeSpecialChars: false,
-);
-```
-
-### PaginationUtils
-
-Advanced utilities for pagination.
-
-```dart
-// Fetch all pages at once
-final allData = await PaginationUtils.fetchAllPages(
-  'posts',
-  parameters: {'category': 'tech'},    // Base query parameters
-  pageParamName: 'page',               // Name of the page parameter
-  perPageParamName: 'per_page',        // Name of the per-page parameter
-  startPage: 1,                        // Starting page number
-  itemsPerPage: 20,                    // Items per page
-  maxPages: 10,                        // Maximum pages to fetch (optional)
-  // Custom function to check if more pages exist based on response
-  hasMorePages: (response) {
-    final total = response.meta['total'] as int;
-    final current = response.meta['current_page'] as int;
-    final perPage = response.meta['per_page'] as int;
-    return current * perPage < total;
-  },
-);
-
-// Process pages one by one with a callback
-await PaginationUtils.processAllPages(
-  'users',
-  parameters: {'status': 'active'},
-  pageParamName: 'page',
-  onPageReceived: (pageData, pageNumber) async {
-    // Process each page as it arrives
-    print('Received page $pageNumber with ${pageData.length} items');
-    await processUserBatch(pageData);
-    // Return true to continue fetching, false to stop
-    return pageNumber < 5;
-  },
-);
-
-// Create a scroll pagination controller for Flutter widgets
-final controller = PaginationUtils.createScrollPaginationController(
-  endpoint: 'products',
-  parameters: {'category': 'electronics'},
-  itemsPerPage: 20,
-  // Optional: Transform response data to your model
-  itemBuilder: (item) => Product.fromJson(item),
-);
-
-// Use with ListView
-ListView.builder(
-  controller: controller.scrollController,
-  itemCount: controller.items.length + (controller.isLoading ? 1 : 0),
-  itemBuilder: (context, index) {
-    if (index == controller.items.length) {
-      return CircularProgressIndicator();
-    }
-    final product = controller.items[index];
-    return ProductCard(product: product);
-  },
-);
-```
-
-### RequestUtils
-
-Utilities for working with API requests.
-
-```dart
-// Build URL with query parameters
-final url = RequestUtils.buildUrl(
-  'https://api.example.com/users',
-  {'search': 'john', 'sort': 'name'},
-);
-// Returns: 'https://api.example.com/users?search=john&sort=name'
-
-// Create form data with files
-final formData = await RequestUtils.createFormData({
-  'name': 'John Doe',
-  'avatar': FileItem(path: '/path/to/image.jpg', filename: 'avatar.jpg'),
-  'documents': [
-    FileItem(path: '/path/to/doc1.pdf', filename: 'doc1.pdf'),
-    FileItem(path: '/path/to/doc2.pdf', filename: 'doc2.pdf'),
-  ],
-});
-
-// Validate request parameters
-final errors = RequestUtils.validateParameters(
-  {
-    'email': 'john@example',
-    'age': '25',
-    'role': null,
-  },
-  {
-    'email': (value) => value.contains('@') && value.contains('.'),
-    'age': (value) => int.tryParse(value) != null && int.parse(value) >= 18,
-    'role': (value) => value != null,
-  },
-);
-// Returns: {'email': false, 'role': false}
-
-// Retry a request with custom logic
-final response = await RequestUtils.retryRequest(
-  () => DioRequestHandler.get('unstable-endpoint'),
-  retryIf: (error) => error is DioException && 
-      [DioExceptionType.connectionTimeout, DioExceptionType.receiveTimeout].contains(error.type),
-  maxRetries: 3,
-  delayBetweenRetries: Duration(seconds: 2),
-);
-```
-
-## 🔧 Advanced Usage
-
-### Custom Interceptors
+### Adding Custom Interceptors
 
 ```dart
 // Create a custom interceptor
@@ -1106,10 +644,86 @@ class CustomInterceptor extends Interceptor {
 ApiClient.dio.interceptors.add(CustomInterceptor());
 ```
 
-### Combining Features
+## 🧰 Available Utilities
+
+dio_flow provides several utility classes to help with common tasks.
+
+### JsonUtils
+
+Utilities for working with JSON data.
 
 ```dart
-// Combine multiple features in a repository pattern
+// Safe JSON parsing with error handling
+final jsonString = '{"name": "John", "age": 30}';
+final json = JsonUtils.tryParseJson(jsonString);
+if (json == null) {
+  print('Failed to parse JSON');
+} else {
+  print('Parsed JSON: $json');
+}
+
+// Get nested values with dot notation
+final data = {'user': {'profile': {'name': 'John'}}};
+final name = JsonUtils.getNestedValue(
+  data,                 // The JSON object
+  'user.profile.name',  // Path to the desired value
+  'N/A',                // Default value if path doesn't exist
+);
+
+// Convert map keys to consistent format
+final normalized = JsonUtils.normalizeJsonKeys(
+  {'First_Name': 'John', 'LAST-NAME': 'Doe'},
+  keysToLowerCase: true,   // Convert to lowercase
+);
+// Returns: {'first_name': 'John', 'last-name': 'Doe'}
+```
+
+### DateTimeUtils
+
+If you need utilities for working with dates and times, you can create a DateTimeUtils class like this:
+
+```dart
+class DateTimeUtils {
+  // Parse date strings safely
+  static DateTime? tryParse(String? dateString) {
+    if (dateString == null || dateString.isEmpty) {
+      return null;
+    }
+    
+    try {
+      return DateTime.parse(dateString);
+    } catch (e) {
+      return null;
+    }
+  }
+  
+  // Format a DateTime to a string
+  static String format(DateTime date, {String format = 'yyyy-MM-dd'}) {
+    // Implementation would depend on a package like intl
+    // This is just a placeholder
+    return date.toString();
+  }
+}
+```
+
+### PaginationUtils
+
+Utilities for pagination are included in dio_flow.
+
+```dart
+// Check if there are more pages available
+bool hasMore = PaginationUtils.hasMorePages(
+  response,    // SuccessResponseModel from your API
+  pageSize,    // Number of items per page
+);
+```
+
+## 🔧 Advanced Usage
+
+### Repository Pattern
+
+```dart
+// Combine features in a repository pattern
 class UserRepository {
   Future<List<User>> getUsers({int page = 1, bool forceRefresh = false}) async {
     final response = await DioRequestHandler.get(
@@ -1191,6 +805,23 @@ final response = await DioRequestHandler.get(
   'protected-endpoint',
   requestOptions: RequestOptionsModel(requireAuth: true), // Important!
 );
+```
+
+**Initialization Problems**
+
+```dart
+// Make sure you're initializing in the correct order
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Step 1: Initialize DioFlowConfig
+  DioFlowConfig.initialize(baseUrl: 'https://api.example.com');
+  
+  // Step 2: Initialize ApiClient
+  await ApiClient.initialize();
+  
+  runApp(MyApp());
+}
 ```
 
 **Handling Certificate Issues**

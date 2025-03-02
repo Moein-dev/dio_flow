@@ -1,3 +1,24 @@
+## 1.1.0
+
+### Added
+- Enhanced documentation with clearer initialization instructions 
+- Improved README with proper examples for all features
+- Added examples for working with path parameters in endpoints
+- Better support for custom request headers
+
+### Fixed
+- Fixed incorrect initialization documentation that omitted ApiClient.initialize() step
+- Corrected endpoint path access in examples (using proper path property instead of non-existent getPath method)
+- Removed references to non-existent JsonUtils methods
+- Updated pagination utilities examples to match actual API
+- Fixed error handling examples to use proper error type enumerations
+
+### Changed
+- Improved type handling in response models
+- Simplified cache management instructions
+- Streamlined interceptor configuration examples
+- Enhanced troubleshooting section with common issues and solutions
+
 ## 1.0.0
 
 First stable release of dio_flow with significant improvements and optimizations.
