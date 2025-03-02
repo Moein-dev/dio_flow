@@ -131,17 +131,24 @@ class JsonUtils {
 
       // Handle nested maps
       if (value is Map<String, dynamic>) {
-        result[processedKey] = normalizeJsonKeys(value, keysToLowerCase: keysToLowerCase);
-      } 
+        result[processedKey] = normalizeJsonKeys(
+          value,
+          keysToLowerCase: keysToLowerCase,
+        );
+      }
       // Handle lists of maps
       else if (value is List) {
-        result[processedKey] = value.map((item) {
-          if (item is Map<String, dynamic>) {
-            return normalizeJsonKeys(item, keysToLowerCase: keysToLowerCase);
-          }
-          return item;
-        }).toList();
-      } 
+        result[processedKey] =
+            value.map((item) {
+              if (item is Map<String, dynamic>) {
+                return normalizeJsonKeys(
+                  item,
+                  keysToLowerCase: keysToLowerCase,
+                );
+              }
+              return item;
+            }).toList();
+      }
       // Handle primitive values
       else {
         result[processedKey] = value;
@@ -150,4 +157,4 @@ class JsonUtils {
 
     return result;
   }
-} 
+}

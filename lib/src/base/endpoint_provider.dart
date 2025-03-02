@@ -8,16 +8,16 @@ import 'package:dio_flow/src/base/api_endpoint_interface.dart';
 class EndpointProvider {
   // Private constructor to enforce singleton pattern
   EndpointProvider._();
-  
+
   // Singleton instance
   static final EndpointProvider _instance = EndpointProvider._();
-  
+
   /// Gets the singleton instance of EndpointProvider.
   static EndpointProvider get instance => _instance;
-  
+
   // Store of registered endpoints
   final Map<String, ApiEndpointInterface> _endpoints = {};
-  
+
   /// Registers a new endpoint with the specified name and path.
   ///
   /// Parameters:
@@ -38,7 +38,7 @@ class EndpointProvider {
     }
     return this;
   }
-  
+
   /// Registers multiple endpoints at once.
   ///
   /// Parameters:
@@ -52,7 +52,7 @@ class EndpointProvider {
     });
     return this;
   }
-  
+
   /// Gets an endpoint by its registered name.
   ///
   /// Parameters:
@@ -70,11 +70,11 @@ class EndpointProvider {
     }
     return endpoint;
   }
-  
+
   /// Clears all registered endpoints.
   ///
   /// This is useful during testing or when reconfiguring the application.
   void clear() {
     _endpoints.clear();
   }
-} 
+}

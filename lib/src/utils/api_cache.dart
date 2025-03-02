@@ -1,16 +1,16 @@
 class CacheEntry {
   final dynamic data;
   final DateTime expiryTime;
-  
-  CacheEntry(this.data, Duration duration) 
-      : expiryTime = DateTime.now().add(duration);
-  
+
+  CacheEntry(this.data, Duration duration)
+    : expiryTime = DateTime.now().add(duration);
+
   bool get isExpired => DateTime.now().isAfter(expiryTime);
 }
 
 class ApiCache {
   static final Map<String, CacheEntry> _cache = {};
-  
+
   static Future<T?> get<T>(String key) async {
     final entry = _cache[key];
     if (entry != null && !entry.isExpired) {
@@ -18,7 +18,7 @@ class ApiCache {
     }
     return null;
   }
-  
+
   static void set<T>(String key, T data, Duration duration) {
     _cache[key] = CacheEntry(data, duration);
   }
@@ -34,4 +34,4 @@ class ApiCache {
   static bool containsKey(String key) {
     return _cache.containsKey(key) && !_cache[key]!.isExpired;
   }
-} 
+}

@@ -26,20 +26,20 @@ class DioRequestHandler {
   );
 
   /// Executes an HTTP request with the specified parameters.
-  /// 
+  ///
   /// This is a private method used internally by the public HTTP method
   /// helpers (get, post, put, etc.) to perform the actual request.
-  /// 
+  ///
   /// Parameters:
   ///   endpoint - The API endpoint to call (can be ApiEndpoint enum or ApiEndpointInterface)
   ///   parameters - Query parameters to include in the request URL
   ///   data - Request body data for POST, PUT, etc.
   ///   requestOptions - Request configuration options including cache control, auth, and headers
   ///   methodOverride - HTTP method to use if different from the one in requestOptions
-  /// 
+  ///
   /// Returns:
   ///   A ResponseModel containing the response data or error information.
-  /// 
+  ///
   /// The method handles both successful responses and errors, wrapping
   /// them appropriately in a ResponseModel or FailedResponseModel.
   static Future<ResponseModel> _executeRequest(
@@ -51,7 +51,7 @@ class DioRequestHandler {
   }) async {
     final headers = _header(hasBearerToken: requestOptions.hasBearerToken);
     ApiClient.dio.options.headers.addAll(headers);
-    
+
     // Get the endpoint path based on the type of endpoint provided
     String endpointPath;
     if (endpoint is ApiEndpointInterface) {
@@ -65,12 +65,14 @@ class DioRequestHandler {
         endpointPath = endpoint;
       }
     } else {
-      throw ArgumentError('Endpoint must be an ApiEndpointInterface or a registered endpoint name');
+      throw ArgumentError(
+        'Endpoint must be an ApiEndpointInterface or a registered endpoint name',
+      );
     }
 
     // Convert our model to a Dio Options object
     final dioOptions = requestOptions.toDioOptions(method: methodOverride);
-    
+
     final String logCurl = LogCurlRequest.create(
       dioOptions.method ?? 'GET',
       endpointPath,
@@ -84,7 +86,7 @@ class DioRequestHandler {
 
     try {
       Response<ResponseModel> response;
-      
+
       switch (dioOptions.method?.toUpperCase() ?? HttpMethods.GET) {
         case HttpMethods.GET:
           response = await ApiClient.dio.get<ResponseModel>(
@@ -144,7 +146,7 @@ class DioRequestHandler {
         // Otherwise, determine from the Dio error type
         errorType = ErrorType.fromDioErrorType(error.type);
       }
-      
+
       return FailedResponseModel(
         statusCode: error.response?.statusCode ?? 500,
         message: error.message ?? 'Request failed',
@@ -155,7 +157,7 @@ class DioRequestHandler {
       );
     } catch (e, stackTrace) {
       log(e.toString());
-      
+
       // For non-Dio errors, set appropriate error type
       ErrorType errorType;
       if (e is FormatException) {
@@ -165,7 +167,7 @@ class DioRequestHandler {
       } else {
         errorType = ErrorType.unknown;
       }
-      
+
       return FailedResponseModel(
         statusCode: 500,
         message: e.toString(),
@@ -178,14 +180,14 @@ class DioRequestHandler {
   }
 
   /// Performs a GET request to the specified API endpoint.
-  /// 
+  ///
   /// Parameters:
   ///   endpoint - The API endpoint to call (can be a registered endpoint name,
   ///              an ApiEndpointInterface implementation, or a String path)
   ///   parameters - Optional query parameters to include in the URL
   ///   data - Optional request body data (uncommon for GET requests)
   ///   requestOptions - Request configuration options including cache control and auth
-  /// 
+  ///
   /// Returns:
   ///   A ResponseModel containing the response data or error information.
   static Future<ResponseModel> get(
@@ -204,14 +206,14 @@ class DioRequestHandler {
   }
 
   /// Performs a POST request to the specified API endpoint.
-  /// 
+  ///
   /// Parameters:
   ///   endpoint - The API endpoint to call (can be a registered endpoint name,
   ///              an ApiEndpointInterface implementation, or a String path)
   ///   parameters - Optional query parameters to include in the URL
   ///   data - Request body data to be sent
   ///   requestOptions - Request configuration options including cache control and auth
-  /// 
+  ///
   /// Returns:
   ///   A ResponseModel containing the response data or error information.
   static Future<ResponseModel> post(
@@ -230,14 +232,14 @@ class DioRequestHandler {
   }
 
   /// Performs a PUT request to the specified API endpoint.
-  /// 
+  ///
   /// Parameters:
   ///   endpoint - The API endpoint to call (can be a registered endpoint name,
   ///              an ApiEndpointInterface implementation, or a String path)
   ///   parameters - Optional query parameters to include in the URL
   ///   data - Request body data to be sent for updating a resource
   ///   requestOptions - Request configuration options including cache control and auth
-  /// 
+  ///
   /// Returns:
   ///   A ResponseModel containing the response data or error information.
   static Future<ResponseModel> put(
@@ -256,19 +258,21 @@ class DioRequestHandler {
   }
 
   /// Performs a PATCH request to the specified API endpoint.
-  /// 
+  ///
   /// Parameters:
   ///   endpoint - The API endpoint to call (can be a registered endpoint name,
   ///              an ApiEndpointInterface implementation, or a String path)
   ///   parameters - Optional query parameters to include in the URL
   ///   requestOptions - Request configuration options including cache control and auth
-  /// 
+  ///
   /// Returns:
   ///   A ResponseModel containing the response data or error information.
   static Future<ResponseModel> patch(
     dynamic endpoint, {
     Map<String, dynamic>? parameters,
-    RequestOptionsModel requestOptions = const RequestOptionsModel(hasBearerToken: true),
+    RequestOptionsModel requestOptions = const RequestOptionsModel(
+      hasBearerToken: true,
+    ),
   }) async {
     return _executeRequest(
       endpoint,
@@ -279,19 +283,21 @@ class DioRequestHandler {
   }
 
   /// Performs a DELETE request to the specified API endpoint.
-  /// 
+  ///
   /// Parameters:
   ///   endpoint - The API endpoint to call (can be a registered endpoint name,
   ///              an ApiEndpointInterface implementation, or a String path)
   ///   parameters - Optional query parameters to include in the URL
   ///   requestOptions - Request configuration options including cache control and auth
-  /// 
+  ///
   /// Returns:
   ///   A ResponseModel containing the response data or error information.
   static Future<ResponseModel> delete(
     dynamic endpoint, {
     Map<String, dynamic>? parameters,
-    RequestOptionsModel requestOptions = const RequestOptionsModel(hasBearerToken: true),
+    RequestOptionsModel requestOptions = const RequestOptionsModel(
+      hasBearerToken: true,
+    ),
   }) async {
     return _executeRequest(
       endpoint,
@@ -302,17 +308,17 @@ class DioRequestHandler {
   }
 
   /// Creates headers for the HTTP request.
-  /// 
+  ///
   /// Parameters:
   ///   hasBearerToken - Whether to include an authorization token
-  /// 
+  ///
   /// Returns:
   ///   A map of header key-value pairs.
-  /// 
+  ///
   /// Currently returns an empty map, to be extended with actual headers
   /// such as authorization tokens, content type, etc.
   static Map<String, dynamic> _header({bool hasBearerToken = false}) {
     final Map<String, dynamic> data = {};
     return data;
   }
-} 
+}

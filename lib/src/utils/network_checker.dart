@@ -43,4 +43,4 @@ class NetworkChecker {
       await Future.delayed(const Duration(seconds: 5));
     }
   }
-} 
+}

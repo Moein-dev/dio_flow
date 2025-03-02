@@ -45,22 +45,23 @@ class SuccessResponseModel extends ResponseModel {
   factory SuccessResponseModel.fromJson(Map<String, dynamic> json) {
     // Extract the cURL log or provide an empty string if not present
     final logCurl = json["log_curl"] ?? "";
-    
+
     // Extract the status code or default to 200 (OK)
-    final statusCode = json["status"] ?? json["statusCode"] ?? json["code"] ?? 200;
-    
+    final statusCode =
+        json["status"] ?? json["statusCode"] ?? json["code"] ?? 200;
+
     // Extract the data using a flexible approach
     final data = _extractData(json);
-    
+
     // Extract any message
     final message = json["message"] ?? json["msg"] ?? json["success_message"];
-    
+
     // Extract links if available
     final links = _extractLinks(json);
-    
+
     // Extract metadata if available
     final meta = _extractMeta(json);
-    
+
     return SuccessResponseModel(
       logCurl: logCurl,
       data: data,
@@ -98,7 +99,7 @@ class SuccessResponseModel extends ResponseModel {
     } else if (json.containsKey("body")) {
       return json["body"];
     }
-    
+
     // Remove non-data fields to avoid duplication
     final cleanJson = Map<String, dynamic>.from(json);
     cleanJson.remove("status");
@@ -110,12 +111,12 @@ class SuccessResponseModel extends ResponseModel {
     cleanJson.remove("links");
     cleanJson.remove("meta");
     cleanJson.remove("pagination");
-    
+
     // If no specific data field is found and the JSON has only a few keys,
     // it's likely the entire JSON is the data
     return cleanJson.isEmpty ? json : cleanJson;
   }
-  
+
   /// Extracts links from a response if available.
   ///
   /// This method checks for common locations of pagination links in API responses.
@@ -128,14 +129,14 @@ class SuccessResponseModel extends ResponseModel {
   static LinksModel? _extractLinks(Map<String, dynamic> json) {
     if (json.containsKey("links") && json["links"] is Map<String, dynamic>) {
       return LinksModel.fromJson(json["links"]);
-    } else if (json.containsKey("pagination") && 
-               json["pagination"] is Map<String, dynamic> && 
-               json["pagination"].containsKey("links")) {
+    } else if (json.containsKey("pagination") &&
+        json["pagination"] is Map<String, dynamic> &&
+        json["pagination"].containsKey("links")) {
       return LinksModel.fromJson(json["pagination"]["links"]);
     }
     return null;
   }
-  
+
   /// Extracts metadata from a response if available.
   ///
   /// This method checks for common locations of metadata in API responses.
@@ -148,8 +149,8 @@ class SuccessResponseModel extends ResponseModel {
   static MetaModel? _extractMeta(Map<String, dynamic> json) {
     if (json.containsKey("meta") && json["meta"] is Map<String, dynamic>) {
       return MetaModel.fromJson(json["meta"]);
-    } else if (json.containsKey("pagination") && 
-               json["pagination"] is Map<String, dynamic>) {
+    } else if (json.containsKey("pagination") &&
+        json["pagination"] is Map<String, dynamic>) {
       return MetaModel.fromJson(json["pagination"]);
     }
     return null;
@@ -163,11 +164,11 @@ class SuccessResponseModel extends ResponseModel {
   /// Returns:
   ///   A Map containing the serialized model properties
   Map<String, dynamic> toJson() => {
-        "data": data,
-        "status": statusCode,
-        "message": message,
-        "links": links?.toJson(),
-        "meta": meta?.toJson(),
-        "log_curl": logCurl,
-      };
+    "data": data,
+    "status": statusCode,
+    "message": message,
+    "links": links?.toJson(),
+    "meta": meta?.toJson(),
+    "log_curl": logCurl,
+  };
 }

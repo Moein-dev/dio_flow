@@ -72,7 +72,7 @@ class DioFlowConfig {
     if (_instance == null) {
       throw StateError(
         'DioFlowConfig must be initialized before use. '
-        'Call DioFlowConfig.initialize() first.'
+        'Call DioFlowConfig.initialize() first.',
       );
     }
     return _instance!;
@@ -84,4 +84,4 @@ class DioFlowConfig {
   static void reset() {
     _instance = null;
   }
-} 
+}

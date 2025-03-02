@@ -47,19 +47,20 @@ class FailedResponseModel extends ResponseModel {
   factory FailedResponseModel.fromJson(Map<String, dynamic> json) {
     // Extract the cURL log or provide an empty string if not present
     final logCurl = json["log_curl"] ?? "";
-    
+
     // Extract the status code or default to 400 (Bad Request)
-    final statusCode = json["status"] ?? json["statusCode"] ?? json["code"] ?? 400;
-    
+    final statusCode =
+        json["status"] ?? json["statusCode"] ?? json["code"] ?? 400;
+
     // Extract the error message using a flexible approach
     final message = _extractErrorMessage(json);
-    
+
     // Extract the error object if available
     final error = _extractError(json);
-    
+
     // Determine the error type based on status code
     final errorType = ErrorType.fromStatusCode(statusCode);
-    
+
     return FailedResponseModel(
       logCurl: logCurl,
       statusCode: statusCode,
@@ -69,7 +70,7 @@ class FailedResponseModel extends ResponseModel {
       errorType: errorType,
     );
   }
-  
+
   /// Extracts an error message from a response using a flexible strategy.
   ///
   /// This method attempts to find the most appropriate error message by
@@ -86,13 +87,13 @@ class FailedResponseModel extends ResponseModel {
       return json["message"].toString();
     } else if (json.containsKey("error") && json["error"] is String) {
       return json["error"];
-    } else if (json.containsKey("error") && 
-               json["error"] is Map && 
-               json["error"].containsKey("message")) {
+    } else if (json.containsKey("error") &&
+        json["error"] is Map &&
+        json["error"].containsKey("message")) {
       return json["error"]["message"].toString();
-    } else if (json.containsKey("errors") && 
-               json["errors"] is List && 
-               (json["errors"] as List).isNotEmpty) {
+    } else if (json.containsKey("errors") &&
+        json["errors"] is List &&
+        (json["errors"] as List).isNotEmpty) {
       // Join multiple errors if present as a list
       return (json["errors"] as List).map((e) => e.toString()).join(", ");
     } else if (json.containsKey("detail")) {
@@ -102,11 +103,11 @@ class FailedResponseModel extends ResponseModel {
     } else if (json.containsKey("reason")) {
       return json["reason"].toString();
     }
-    
+
     // Default message if no specific error message field is found
     return "Unknown error";
   }
-  
+
   /// Extracts error data from a response.
   ///
   /// This method looks for error data in various formats and locations.
@@ -124,7 +125,7 @@ class FailedResponseModel extends ResponseModel {
     }
     return null;
   }
-  
+
   /// Returns a user-friendly error message.
   ///
   /// This method uses both the status code and error message to generate
@@ -137,7 +138,7 @@ class FailedResponseModel extends ResponseModel {
     if (errorType != null) {
       return errorType!.userFriendlyMessage;
     }
-    
+
     // Otherwise, generate a message based on status code
     if (statusCode != null) {
       if (statusCode! >= 500) {
@@ -152,17 +153,17 @@ class FailedResponseModel extends ResponseModel {
         return "Too many requests. Please try again later.";
       }
     }
-    
+
     // Use the original error message if it's suitable for users
     if (message != null && message!.isNotEmpty && message!.length < 100) {
       // Simple heuristic: if message is short, it's probably user-friendly
       return message!;
     }
-    
+
     // Default message
     return "An error occurred. Please try again.";
   }
-  
+
   /// Returns debugging information about the error.
   ///
   /// This method compiles various information about the error into a single
@@ -172,21 +173,21 @@ class FailedResponseModel extends ResponseModel {
   ///   A string containing debugging information
   String get debugInfo {
     final buffer = StringBuffer();
-    
+
     buffer.writeln("Status Code: ${statusCode ?? 'Unknown'}");
     buffer.writeln("Error Type: ${errorType?.name ?? 'Unknown'}");
     buffer.writeln("Message: ${message ?? 'No message'}");
-    
+
     if (error != null) {
       buffer.writeln("Error: $error");
     }
-    
+
     buffer.writeln("cURL: $logCurl");
-    
+
     if (stackTrace != null) {
       buffer.writeln("Stack Trace:\n$stackTrace");
     }
-    
+
     return buffer.toString();
   }
 }

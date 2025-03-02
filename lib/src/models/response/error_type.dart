@@ -5,37 +5,37 @@
 enum ErrorType {
   /// Network errors like no internet connection, timeout, etc.
   network,
-  
+
   /// Authentication errors like invalid credentials, expired token, etc.
   authentication,
-  
+
   /// Authorization errors like insufficient permissions, forbidden access, etc.
   authorization,
-  
+
   /// Request errors like invalid parameters, missing required fields, etc.
   validation,
-  
+
   /// Server errors like internal server error, service unavailable, etc.
   server,
-  
+
   /// Resource not found errors
   notFound,
-  
+
   /// Parsing errors like invalid JSON, unexpected format, etc.
   parsing,
-  
+
   /// Timeout errors when a request takes too long
   timeout,
-  
+
   /// Cancellation errors when a request is manually cancelled
   cancelled,
-  
+
   /// Rate limit errors when too many requests are made
   rateLimit,
-  
+
   /// Unknown or uncategorized errors
   unknown;
-  
+
   /// Converts an HTTP status code to a specific error type.
   ///
   /// This provides a default mapping from common HTTP status codes
@@ -69,7 +69,7 @@ enum ErrorType {
         return ErrorType.unknown;
     }
   }
-  
+
   /// Maps a Dio error type to an ErrorType.
   ///
   /// This is useful for converting Dio's internal error types
@@ -83,9 +83,9 @@ enum ErrorType {
   static ErrorType fromDioErrorType(dynamic dioErrorType) {
     // Use string comparison to avoid direct dependency on specific Dio version
     final typeString = dioErrorType.toString();
-    
-    if (typeString.contains('connectTimeout') || 
-        typeString.contains('sendTimeout') || 
+
+    if (typeString.contains('connectTimeout') ||
+        typeString.contains('sendTimeout') ||
         typeString.contains('receiveTimeout')) {
       return ErrorType.timeout;
     } else if (typeString.contains('cancel')) {
@@ -96,7 +96,7 @@ enum ErrorType {
       return ErrorType.unknown;
     }
   }
-  
+
   /// Returns a user-friendly error message for this error type.
   ///
   /// This provides default error messages that can be shown to users
@@ -130,4 +130,4 @@ enum ErrorType {
         return 'An unexpected error occurred. Please try again.';
     }
   }
-} 
+}

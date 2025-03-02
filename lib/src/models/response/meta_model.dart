@@ -1,6 +1,4 @@
-
 part 'link_model.dart';
-
 
 class MetaModel {
   final int? currentPage;
@@ -24,29 +22,30 @@ class MetaModel {
   });
 
   factory MetaModel.fromJson(Map<String, dynamic> json) => MetaModel(
-        currentPage: json["current_page"],
-        from: json["from"],
-        lastPage: json["last_page"],
-        links: json["links"] == null
+    currentPage: json["current_page"],
+    from: json["from"],
+    lastPage: json["last_page"],
+    links:
+        json["links"] == null
             ? []
             : List<LinkModel>.from(
-                json["links"]!.map((x) => LinkModel.fromJson(x))),
-        path: json["path"],
-        perPage: json["per_page"],
-        to: json["to"],
-        total: json["total"],
-      );
+              json["links"]!.map((x) => LinkModel.fromJson(x)),
+            ),
+    path: json["path"],
+    perPage: json["per_page"],
+    to: json["to"],
+    total: json["total"],
+  );
 
   Map<String, dynamic> toJson() => {
-        "current_page": currentPage,
-        "from": from,
-        "last_page": lastPage,
-        "links": links == null
-            ? []
-            : List<dynamic>.from(links!.map((x) => x.toJson())),
-        "path": path,
-        "per_page": perPage,
-        "to": to,
-        "total": total,
-      };
+    "current_page": currentPage,
+    "from": from,
+    "last_page": lastPage,
+    "links":
+        links == null ? [] : List<dynamic>.from(links!.map((x) => x.toJson())),
+    "path": path,
+    "per_page": perPage,
+    "to": to,
+    "total": total,
+  };
 }

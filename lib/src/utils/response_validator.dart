@@ -25,7 +25,7 @@ class ResponseValidator {
     if (response.statusCode == null) {
       throw ApiException('Response status code is null');
     }
-    
+
     // Allow non-success status codes to pass through
     // They will be handled by creating a FailedResponseModel
   }
@@ -41,9 +41,9 @@ class ResponseValidator {
   /// Returns:
   ///   true if the status code is in the 200-299 range, false otherwise
   static bool isSuccessful(Response response) {
-    return response.statusCode != null && 
-           response.statusCode! >= 200 && 
-           response.statusCode! < 300;
+    return response.statusCode != null &&
+        response.statusCode! >= 200 &&
+        response.statusCode! < 300;
   }
 
   /// Checks if a response has a non-null data payload.
@@ -59,7 +59,7 @@ class ResponseValidator {
   static bool hasData(Response response) {
     return response.data != null;
   }
-  
+
   /// Checks if a response contains a valid JSON object as data.
   ///
   /// This method determines if the response data is a Map,
@@ -73,7 +73,7 @@ class ResponseValidator {
   static bool hasJsonObject(Response response) {
     return response.data is Map<String, dynamic>;
   }
-  
+
   /// Checks if a response contains a valid JSON array as data.
   ///
   /// This method determines if the response data is a List,
@@ -87,4 +87,4 @@ class ResponseValidator {
   static bool hasJsonArray(Response response) {
     return response.data is List;
   }
-} 
+}

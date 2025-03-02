@@ -16,7 +16,7 @@ void _initApiClient() {
     receiveTimeout: const Duration(seconds: 3),
     sendTimeout: const Duration(seconds: 3),
   );
-  
+
   // Register endpoints that will be used in the app
   _registerApiEndpoints();
 }
@@ -72,13 +72,7 @@ class _MyHomePageState extends State<MyHomePage> {
           title: Text(widget.title),
           bottom: TabBar(tabs: _tabs),
         ),
-        body: TabBarView(
-          children: [
-            PostsPage(),
-            UsersPage(),
-            JsonUtilsPage(),
-          ],
-        ),
+        body: TabBarView(children: [PostsPage(), UsersPage(), JsonUtilsPage()]),
       ),
     );
   }
@@ -115,19 +109,19 @@ class _PostsPageState extends State<PostsPage> {
       // Use dio_flow to fetch posts
       final response = await DioRequestHandler.get(
         'posts',
-        parameters: {
-          '_page': _currentPage,
-          '_limit': _pageSize,
-        },
+        parameters: {'_page': _currentPage, '_limit': _pageSize},
       );
-      
+
       // Handle the response using ResponseModel
       if (response is SuccessResponseModel) {
         final data = response.data as List;
         setState(() {
-          _posts = data.map((json) => Post.fromJson(json as Map<String, dynamic>)).toList();
+          _posts =
+              data
+                  .map((json) => Post.fromJson(json as Map<String, dynamic>))
+                  .toList();
           _isLoading = false;
-          
+
           // For JSONPlaceholder API, we use a workaround to get pagination info
           // In a real app, you would use response.meta for pagination
           _hasMorePages = data.length >= _pageSize;
@@ -154,24 +148,24 @@ class _PostsPageState extends State<PostsPage> {
 
     try {
       _currentPage++;
-      
+
       // Use dio_flow to fetch the next page
       final response = await DioRequestHandler.get(
         'posts',
-        parameters: {
-          '_page': _currentPage,
-          '_limit': _pageSize,
-        },
+        parameters: {'_page': _currentPage, '_limit': _pageSize},
       );
-      
+
       if (response is SuccessResponseModel) {
         final data = response.data as List;
-        final newPosts = data.map((json) => Post.fromJson(json as Map<String, dynamic>)).toList();
-        
+        final newPosts =
+            data
+                .map((json) => Post.fromJson(json as Map<String, dynamic>))
+                .toList();
+
         setState(() {
           _posts = [..._posts, ...newPosts];
           _isLoading = false;
-          
+
           // For JSONPlaceholder API, determine if there are more pages based on returned data
           _hasMorePages = newPosts.length >= _pageSize;
         });
@@ -209,7 +203,7 @@ class _PostsPageState extends State<PostsPage> {
           if (index == _posts.length) {
             return const Center(child: CircularProgressIndicator());
           }
-          
+
           final post = _posts[index];
           return Card(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -267,14 +261,14 @@ class _UsersPageState extends State<UsersPage> {
     try {
       // Use dio_flow to fetch users
       final response = await DioRequestHandler.get('users');
-      
+
       if (response is SuccessResponseModel) {
         final data = response.data as List;
-        
+
         setState(() {
           // Convert JSON to models
           _users = List<User>.from(
-            data.map((item) => User.fromJson(item as Map<String, dynamic>))
+            data.map((item) => User.fromJson(item as Map<String, dynamic>)),
           );
           _isLoading = false;
         });
@@ -310,9 +304,7 @@ class _UsersPageState extends State<UsersPage> {
         return Card(
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: ListTile(
-            leading: CircleAvatar(
-              child: Text(user.name[0]),
-            ),
+            leading: CircleAvatar(child: Text(user.name[0])),
             title: Text(user.name),
             subtitle: Text(user.email),
             trailing: Text('ID: ${user.id}'),
@@ -371,7 +363,7 @@ class _JsonUtilsPageState extends State<JsonUtilsPage> {
   void _extractNestedValue(String path) {
     // Use dio_flow's JsonUtils for nested value extraction
     final value = JsonUtils.getNestedValue(_parsedJson, path, 'Not found');
-    
+
     setState(() {
       _extractedValue = value.toString();
     });
@@ -382,22 +374,24 @@ class _JsonUtilsPageState extends State<JsonUtilsPage> {
       'First_Name': 'Alice',
       'LAST-NAME': 'Smith',
       'phone_NUMBER': '123-456-7890',
-      'EMAIL_ADDRESS': 'alice.smith@example.com'
+      'EMAIL_ADDRESS': 'alice.smith@example.com',
     };
-    
+
     // Use dio_flow's JsonUtils for key normalization
-    final normalized = JsonUtils.normalizeJsonKeys(weirdKeys, keysToLowerCase: true);
-    
+    final normalized = JsonUtils.normalizeJsonKeys(
+      weirdKeys,
+      keysToLowerCase: true,
+    );
+
     setState(() {
       _normalizedResult = normalized.toString();
     });
   }
 
   Future<void> _demonstratePagination() async {
-    
     try {
       if (!mounted) return;
-      
+
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -414,26 +408,27 @@ class _JsonUtilsPageState extends State<JsonUtilsPage> {
           );
         },
       );
-      
+
       // Use dio_flow's PaginationUtils to fetch all posts
       final response = await PaginationUtils.fetchAllPages(
         'posts',
-        parameters: {
-          '_limit': 20,
-        },
+        parameters: {'_limit': 20},
         pageParamName: '_page',
         perPageParamName: '_limit',
         startPage: 1,
       );
-      
+
       if (!mounted) return;
-      
+
       if (response is SuccessResponseModel) {
         final data = response.data as List;
-        final allPosts = data.map((item) => Post.fromJson(item as Map<String, dynamic>)).toList();
-        
+        final allPosts =
+            data
+                .map((item) => Post.fromJson(item as Map<String, dynamic>))
+                .toList();
+
         Navigator.of(context).pop(); // Close loading dialog
-        
+
         // Show result dialog
         if (mounted) {
           showDialog(
@@ -441,7 +436,9 @@ class _JsonUtilsPageState extends State<JsonUtilsPage> {
             builder: (BuildContext context) {
               return AlertDialog(
                 title: const Text('Pagination Complete'),
-                content: Text('Successfully fetched ${allPosts.length} posts across multiple pages.'),
+                content: Text(
+                  'Successfully fetched ${allPosts.length} posts across multiple pages.',
+                ),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(),
@@ -457,9 +454,9 @@ class _JsonUtilsPageState extends State<JsonUtilsPage> {
       }
     } catch (e) {
       if (!mounted) return;
-      
+
       Navigator.of(context).pop(); // Close loading dialog
-      
+
       // Show error dialog
       if (mounted) {
         showDialog(
@@ -488,9 +485,12 @@ class _JsonUtilsPageState extends State<JsonUtilsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('JSON Utilities Demo', style: Theme.of(context).textTheme.headlineSmall),
+          Text(
+            'JSON Utilities Demo',
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
           const SizedBox(height: 16),
-          
+
           // Sample JSON display
           Text('Sample JSON:', style: Theme.of(context).textTheme.titleMedium),
           Container(
@@ -503,9 +503,12 @@ class _JsonUtilsPageState extends State<JsonUtilsPage> {
             child: Text(_sampleJson),
           ),
           const SizedBox(height: 24),
-          
+
           // Nested value extraction
-          Text('Extract Nested Values:', style: Theme.of(context).textTheme.titleMedium),
+          Text(
+            'Extract Nested Values:',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
@@ -517,7 +520,8 @@ class _JsonUtilsPageState extends State<JsonUtilsPage> {
               ),
               ActionChip(
                 label: const Text('City'),
-                onPressed: () => _extractNestedValue('user.profile.address.city'),
+                onPressed:
+                    () => _extractNestedValue('user.profile.address.city'),
               ),
               ActionChip(
                 label: const Text('Theme'),
@@ -545,9 +549,12 @@ class _JsonUtilsPageState extends State<JsonUtilsPage> {
               child: Text('Extracted value: $_extractedValue'),
             ),
           const SizedBox(height: 24),
-          
+
           // Key normalization
-          Text('JSON Key Normalization:', style: Theme.of(context).textTheme.titleMedium),
+          Text(
+            'JSON Key Normalization:',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           const SizedBox(height: 8),
           ElevatedButton(
             onPressed: _demonstrateNormalization,
@@ -564,9 +571,9 @@ class _JsonUtilsPageState extends State<JsonUtilsPage> {
               width: double.infinity,
               child: Text('Normalized result: $_normalizedResult'),
             ),
-            
+
           const SizedBox(height: 24),
-          
+
           // Information about dio_flow
           Card(
             color: Colors.purple.shade50,
@@ -585,18 +592,38 @@ class _JsonUtilsPageState extends State<JsonUtilsPage> {
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                   const SizedBox(height: 8),
-                  _buildFeatureRow(context, 'API Client', 'Simplified API requests with endpoint registration'),
-                  _buildFeatureRow(context, 'JSON Utilities', 'Safe parsing, dot notation access, key normalization'),
-                  _buildFeatureRow(context, 'Pagination Helpers', 'Fetch all pages, handle metadata, process paginated responses'),
-                  _buildFeatureRow(context, 'Model Extensions', 'Type-safe conversions from JSON to models and collections'),
-                  _buildFeatureRow(context, 'Response Handling', 'Standardized response models with clear success and error states'),
+                  _buildFeatureRow(
+                    context,
+                    'API Client',
+                    'Simplified API requests with endpoint registration',
+                  ),
+                  _buildFeatureRow(
+                    context,
+                    'JSON Utilities',
+                    'Safe parsing, dot notation access, key normalization',
+                  ),
+                  _buildFeatureRow(
+                    context,
+                    'Pagination Helpers',
+                    'Fetch all pages, handle metadata, process paginated responses',
+                  ),
+                  _buildFeatureRow(
+                    context,
+                    'Model Extensions',
+                    'Type-safe conversions from JSON to models and collections',
+                  ),
+                  _buildFeatureRow(
+                    context,
+                    'Response Handling',
+                    'Standardized response models with clear success and error states',
+                  ),
                 ],
               ),
             ),
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           // Add a demonstration of pagination helper
           Card(
             color: Colors.amber.shade50,
@@ -620,7 +647,8 @@ class _JsonUtilsPageState extends State<JsonUtilsPage> {
                     child: const Text('Demo Pagination'),
                   ),
                   const SizedBox(height: 8),
-                  Text('''
+                  Text(
+                    '''
 // Example code:
 final response = await PaginationUtils.fetchAllPages(
   'posts',
@@ -637,10 +665,12 @@ if (response is SuccessResponseModel) {
   final allPosts = data.map((item) => Post.fromJson(item as Map<String, dynamic>)).toList();
   print('Fetched \${allPosts.length} posts across multiple pages');
 }
-''', style: Theme.of(context).textTheme.bodySmall?.copyWith(
+''',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       fontFamily: 'monospace',
                       backgroundColor: Colors.grey.shade200,
-                    )),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -649,8 +679,12 @@ if (response is SuccessResponseModel) {
       ),
     );
   }
-  
-  Widget _buildFeatureRow(BuildContext context, String title, String description) {
+
+  Widget _buildFeatureRow(
+    BuildContext context,
+    String title,
+    String description,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Row(
@@ -664,14 +698,11 @@ if (response is SuccessResponseModel) {
               children: [
                 Text(
                   title,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
                 ),
-                Text(
-                  description,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
+                Text(description, style: Theme.of(context).textTheme.bodySmall),
               ],
             ),
           ),

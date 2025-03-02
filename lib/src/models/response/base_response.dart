@@ -12,18 +12,18 @@ abstract class BaseResponse<T> {
   ///
   /// This can be null if the API doesn't return any data or if there was an error.
   final T? data;
-  
+
   /// The HTTP status code of the response.
   ///
   /// Status codes in the 200-299 range indicate success,
   /// while other ranges indicate various types of errors.
   final int statusCode;
-  
+
   /// A message describing the response or error.
   ///
   /// This is typically used for error messages or success confirmations.
   final String? message;
-  
+
   /// Additional metadata associated with the response.
   ///
   /// This can include pagination information, timestamps, or any other
@@ -37,24 +37,19 @@ abstract class BaseResponse<T> {
   ///   statusCode - The HTTP status code (required)
   ///   message - A descriptive message about the response
   ///   meta - Additional metadata associated with the response
-  BaseResponse({
-    this.data,
-    required this.statusCode,
-    this.message,
-    this.meta,
-  });
+  BaseResponse({this.data, required this.statusCode, this.message, this.meta});
 
   /// Indicates whether the response was successful.
   ///
   /// Returns true if the status code is in the 200-299 range,
   /// which is the standard range for successful HTTP responses.
   bool get isSuccess => statusCode >= 200 && statusCode < 300;
-  
+
   /// Indicates whether the response represents an error.
   ///
   /// Returns true if the status code is outside the 200-299 range.
   bool get isError => !isSuccess;
-  
+
   /// Converts the response to a JSON map.
   ///
   /// This method must be implemented by subclasses to provide
@@ -63,4 +58,4 @@ abstract class BaseResponse<T> {
   /// Returns:
   ///   A Map<String, dynamic> representation of the response
   Map<String, dynamic> toJson();
-} 
+}

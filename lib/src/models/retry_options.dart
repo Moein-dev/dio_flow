@@ -9,7 +9,7 @@ class RetryOptions {
   /// This includes the initial request, so a value of 3 means
   /// the initial request plus 2 retry attempts.
   final int maxAttempts;
-  
+
   /// The time interval to wait between retry attempts.
   ///
   /// This delay helps prevent overwhelming the server with rapid
@@ -21,8 +21,5 @@ class RetryOptions {
   /// Parameters:
   ///   maxAttempts - The maximum number of retry attempts (required)
   ///   retryInterval - The time interval to wait between retries (required)
-  const RetryOptions({
-    required this.maxAttempts,
-    required this.retryInterval,
-  });
-} 
+  const RetryOptions({required this.maxAttempts, required this.retryInterval});
+}

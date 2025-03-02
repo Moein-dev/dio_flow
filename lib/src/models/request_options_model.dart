@@ -9,28 +9,28 @@ import 'package:dio/dio.dart';
 class RequestOptionsModel {
   /// Whether to attach the bearer token to the request
   final bool hasBearerToken;
-  
+
   /// Whether to disable caching for this specific request
   final bool noCache;
-  
+
   /// Custom cache duration for this request, overriding the default
   final Duration? cacheMaxAge;
-  
+
   /// Content type for the request (e.g., 'application/json')
   final String? contentType;
-  
+
   /// Response type to expect (defaults to JSON)
   final ResponseType responseType;
-  
+
   /// Additional headers to include with the request
   final Map<String, dynamic>? headers;
-  
+
   /// Additional custom parameters for the request
   final Map<String, dynamic>? extra;
-  
+
   /// Whether to log the curl command for this request
   final bool logCurl;
-  
+
   /// Creates a new RequestOptionsModel with the specified parameters.
   ///
   /// Parameters:
@@ -52,7 +52,7 @@ class RequestOptionsModel {
     this.extra,
     this.logCurl = true,
   });
-  
+
   /// Converts this model to a Dio Options object.
   ///
   /// This method creates a properly configured Dio Options object with
@@ -66,7 +66,7 @@ class RequestOptionsModel {
   Options toDioOptions({String? method}) {
     // Start with a base extra map
     final Map<String, dynamic> extraMap = {};
-    
+
     // Add cache-related options
     if (noCache) {
       extraMap['no_cache'] = true;
@@ -74,12 +74,12 @@ class RequestOptionsModel {
     if (cacheMaxAge != null) {
       extraMap['cache_maxAge'] = cacheMaxAge;
     }
-    
+
     // Add any custom extra params
     if (extra != null && extra!.isNotEmpty) {
       extraMap.addAll(extra!);
     }
-    
+
     // Create the Options object
     return Options(
       method: method,
@@ -89,7 +89,7 @@ class RequestOptionsModel {
       extra: extraMap,
     );
   }
-  
+
   /// Creates a copy of this model with the specified changes.
   ///
   /// This method allows for easily creating modified versions of an existing
@@ -118,29 +118,29 @@ class RequestOptionsModel {
       logCurl: logCurl ?? this.logCurl,
     );
   }
-  
+
   /// Predefined options for requests that should never be cached.
   static const RequestOptionsModel noApiCache = RequestOptionsModel(
     noCache: true,
   );
-  
+
   /// Predefined options for requests with a short cache duration (1 minute).
   static const RequestOptionsModel shortApiCache = RequestOptionsModel(
     cacheMaxAge: Duration(minutes: 1),
   );
-  
+
   /// Predefined options for requests with a medium cache duration (15 minutes).
   static const RequestOptionsModel mediumApiCache = RequestOptionsModel(
     cacheMaxAge: Duration(minutes: 15),
   );
-  
+
   /// Predefined options for requests with a long cache duration (1 hour).
   static const RequestOptionsModel longApiCache = RequestOptionsModel(
     cacheMaxAge: Duration(hours: 1),
   );
-  
+
   /// Predefined options for requests that require authentication.
   static const RequestOptionsModel authenticated = RequestOptionsModel(
     hasBearerToken: true,
   );
-} 
+}

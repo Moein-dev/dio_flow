@@ -4,7 +4,7 @@
 /// Users can implement this interface to define their own custom endpoints.
 abstract class ApiEndpointInterface {
   /// The relative path of the endpoint.
-  /// 
+  ///
   /// This path is appended to the base URL when making API requests.
   String get path;
 }
@@ -33,6 +33,6 @@ class ApiEndpointFactory {
 class _SimpleApiEndpoint implements ApiEndpointInterface {
   @override
   final String path;
-  
+
   const _SimpleApiEndpoint(this.path);
-} 
+}

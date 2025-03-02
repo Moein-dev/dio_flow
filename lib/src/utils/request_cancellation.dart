@@ -27,4 +27,4 @@ class RequestCancellation {
     }
     _tokens.clear();
   }
-} 
+}

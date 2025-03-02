@@ -39,7 +39,7 @@ class PaginationUtils {
   }) async {
     // Initialize parameters if null
     final queryParams = parameters ?? <String, dynamic>{};
-    
+
     // Set initial page parameters if not already set
     if (!queryParams.containsKey(pageParamName)) {
       queryParams[pageParamName] = startPage;
@@ -47,21 +47,21 @@ class PaginationUtils {
 
     // Storage for accumulated items
     final allItems = <dynamic>[];
-    
+
     // Keep track of the current page
     int currentPage = queryParams[pageParamName] as int? ?? startPage;
-    
+
     // Make the first API call
     ResponseModel response = await DioRequestHandler.get(
       endpoint,
       parameters: queryParams,
     );
-    
+
     // Check if response is successful
     if (response is! SuccessResponseModel) {
       return response; // Return the error response directly
     }
-    
+
     // Extract data from first page response
     List<dynamic> currentPageData;
     if (dataExtractor != null) {
@@ -72,10 +72,10 @@ class PaginationUtils {
       // Default to empty list if data is not in expected format
       currentPageData = [];
     }
-    
+
     // Add first page data to accumulated items
     allItems.addAll(currentPageData);
-    
+
     // Check if we should stop after the first page
     if (stopCondition != null && stopCondition(response)) {
       return SuccessResponseModel(
@@ -85,22 +85,22 @@ class PaginationUtils {
         meta: response.meta,
       );
     }
-    
+
     // Continue fetching until no more pages are available
     while (hasMorePages(response, currentPageData.length)) {
       // Increment page number
       currentPage++;
-      
+
       // Update query parameters for next page
       final nextPageParams = Map<String, dynamic>.from(queryParams);
       nextPageParams[pageParamName] = currentPage;
-      
+
       // Fetch next page
       ResponseModel nextResponse = await DioRequestHandler.get(
         endpoint,
         parameters: nextPageParams,
       );
-      
+
       // Check if next page response is successful
       if (nextResponse is! SuccessResponseModel) {
         // Stop pagination on error, but return accumulated data
@@ -111,7 +111,7 @@ class PaginationUtils {
           meta: response.meta,
         );
       }
-      
+
       // Extract data from next page response
       List<dynamic> nextPageData;
       if (dataExtractor != null) {
@@ -121,24 +121,24 @@ class PaginationUtils {
       } else {
         nextPageData = [];
       }
-      
+
       // Add next page data to accumulated items
       allItems.addAll(nextPageData);
-      
+
       // Update reference to current response
       response = nextResponse;
-      
+
       // Check if we should stop after this page
       if (stopCondition != null && stopCondition(response)) {
         break;
       }
-      
+
       // Check if there are no more items on this page
       if (nextPageData.isEmpty) {
         break;
       }
     }
-    
+
     // Return a new response with all accumulated items
     return SuccessResponseModel(
       data: allItems,
@@ -147,9 +147,9 @@ class PaginationUtils {
       meta: response.meta,
     );
   }
-  
+
   /// Determines if there are more pages available based on response metadata.
-  /// 
+  ///
   /// This checks various pagination indicators:
   /// - Links with "next" URL
   /// - Meta information with current_page and last_page
@@ -158,7 +158,7 @@ class PaginationUtils {
     if (response is! SuccessResponseModel) {
       return false;
     }
-    
+
     // Check links pagination (common in Laravel and similar APIs)
     if (response.links != null) {
       final links = response.links!;
@@ -166,24 +166,27 @@ class PaginationUtils {
         return true;
       }
     }
-    
+
     // Check meta pagination info
     if (response.meta != null) {
       final meta = response.meta!;
-      
+
       // Check if current page is less than total pages
       if (meta.currentPage != null && meta.lastPage != null) {
         return meta.currentPage! < meta.lastPage!;
       }
-      
+
       // Check if we've fetched all items
-      if (meta.currentPage != null && meta.perPage != null && meta.total != null) {
-        final fetchedItems = (meta.currentPage! - 1) * meta.perPage! + currentPageItemCount;
+      if (meta.currentPage != null &&
+          meta.perPage != null &&
+          meta.total != null) {
+        final fetchedItems =
+            (meta.currentPage! - 1) * meta.perPage! + currentPageItemCount;
         return fetchedItems < meta.total!;
       }
     }
-    
+
     // Fallback: If we have a full page of items, assume there might be more
     return currentPageItemCount > 0 && currentPageItemCount >= 10;
   }
-} 
+}

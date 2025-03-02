@@ -23,7 +23,7 @@ class RequestMetric {
 class RequestMetrics {
   static const int _maxStoredMetrics = 100;
   static final Queue<RequestMetric> _metrics = Queue();
-  
+
   static void addMetric(RequestMetric metric) {
     _metrics.add(metric);
     if (_metrics.length > _maxStoredMetrics) {
@@ -46,7 +46,7 @@ class RequestMetrics {
     for (final metric in _metrics) {
       totalDuration += metric.duration;
       metric.isSuccess ? successCount++ : failureCount++;
-      
+
       pathStats.putIfAbsent(metric.path, () => []).add(metric.duration);
     }
 
@@ -69,4 +69,4 @@ class RequestMetrics {
   }
 
   static void clear() => _metrics.clear();
-} 
+}

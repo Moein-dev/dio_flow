@@ -4,19 +4,18 @@ class TokenManager {
   static String? _accessToken;
   static String? _refreshToken;
   static DateTime? _tokenExpiry;
-  
+
   static Future<String?> getAccessToken() async {
     if (_accessToken == null || _isTokenExpired()) {
       await _refreshAccessToken();
     }
     return _accessToken;
   }
-  
+
   static bool _isTokenExpired() {
-    
     return _tokenExpiry?.isBefore(DateTime.now()) ?? true;
   }
-  
+
   static Future<void> _refreshAccessToken() async {
     if (_refreshToken == null) {
       throw ApiException('No refresh token available');
@@ -39,4 +38,4 @@ class TokenManager {
     _refreshToken = null;
     _tokenExpiry = null;
   }
-} 
+}

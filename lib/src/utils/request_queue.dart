@@ -27,7 +27,9 @@ class RequestQueue {
   static StreamSubscription? _connectivitySubscription;
 
   static void initialize() {
-    _connectivitySubscription = NetworkChecker.connectionStream.listen((hasConnection) {
+    _connectivitySubscription = NetworkChecker.connectionStream.listen((
+      hasConnection,
+    ) {
       if (hasConnection) {
         _processQueue();
       }
@@ -89,4 +91,4 @@ class RequestQueue {
 
   static int get queueLength => _queue.length;
   static bool get isProcessing => _isProcessing;
-} 
+}
