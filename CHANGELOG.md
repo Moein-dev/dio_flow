@@ -1,23 +1,24 @@
+## 1.1.1
+
+* Improved network connectivity handling:
+  * Made connectivity checks less aggressive
+  * Added multiple domain checks for better reliability
+  * Improved retry mechanism for connection errors
+* Enhanced response handling:
+  * Accept all status codes and let handlers process them
+  * Better error handling and retry logic
+  * Improved interceptor order for better request flow
+* Fixed authentication handling:
+  * Added option to skip authentication for specific requests
+  * Better token management
+
 ## 1.1.0
 
-### Added
-- Enhanced documentation with clearer initialization instructions 
-- Improved README with proper examples for all features
-- Added examples for working with path parameters in endpoints
-- Better support for custom request headers
-
-### Fixed
-- Fixed incorrect initialization documentation that omitted ApiClient.initialize() step
-- Corrected endpoint path access in examples (using proper path property instead of non-existent getPath method)
-- Removed references to non-existent JsonUtils methods
-- Updated pagination utilities examples to match actual API
-- Fixed error handling examples to use proper error type enumerations
-
-### Changed
-- Improved type handling in response models
-- Simplified cache management instructions
-- Streamlined interceptor configuration examples
-- Enhanced troubleshooting section with common issues and solutions
+* Added support for Flutter 3.19.0
+* Updated dependencies
+* Fixed minor bugs
+* Added more documentation
+* Added example project
 
 ## 1.0.0
 

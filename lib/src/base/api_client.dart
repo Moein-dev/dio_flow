@@ -99,7 +99,7 @@ class ApiClient {
         connectTimeout: config.connectTimeout,
         receiveTimeout: config.receiveTimeout,
         sendTimeout: config.sendTimeout,
-        validateStatus: (status) => status != null && status < 500,
+        validateStatus: (status) => true, // Accept all status codes
       ),
     );
 
@@ -109,15 +109,23 @@ class ApiClient {
     );
 
     dio.interceptors.addAll([
-      ConnectivityInterceptor(),
+      // Order matters! Process requests in this order:
+      // 1. Metrics (to track all requests)
+      MetricsInterceptor(),
+      // 2. Rate limiting (to prevent overwhelming the server)
       RateLimitInterceptor(
         maxRequests: 30,
         interval: const Duration(minutes: 1),
       ),
-      MetricsInterceptor(),
+      // 3. Authentication and headers
       DioInterceptor(),
+      // 4. Retries (for failed requests)
       RetryInterceptor(options: retryOptions, dio: dio),
+      // 5. Connectivity check (after retries to allow retry on connection restore)
+      ConnectivityInterceptor(),
+      // 6. Caching (for successful responses)
       _cacheInterceptor!,
+      // 7. Logging (to see what's happening)
       LogInterceptor(
         requestBody: true,
         responseBody: true,

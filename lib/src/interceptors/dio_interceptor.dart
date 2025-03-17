@@ -19,14 +19,15 @@ class DioInterceptor extends Interceptor {
   /// The internal Dio instance is configured with the application's base URL
   /// and default timeouts.
   DioInterceptor()
-    : dio = Dio(
-        BaseOptions(
-          baseUrl: DioFlowConfig.instance.baseUrl,
-          connectTimeout: DioFlowConfig.instance.connectTimeout,
-          receiveTimeout: DioFlowConfig.instance.receiveTimeout,
-          sendTimeout: DioFlowConfig.instance.sendTimeout,
-        ),
-      );
+      : dio = Dio(
+          BaseOptions(
+            baseUrl: DioFlowConfig.instance.baseUrl,
+            connectTimeout: DioFlowConfig.instance.connectTimeout,
+            receiveTimeout: DioFlowConfig.instance.receiveTimeout,
+            sendTimeout: DioFlowConfig.instance.sendTimeout,
+            validateStatus: (status) => true, // Accept all status codes
+          ),
+        );
 
   /// Intercepts outgoing requests to add authentication and prepare for logging.
   ///
@@ -52,7 +53,7 @@ class DioInterceptor extends Interceptor {
       });
 
       final token = await TokenManager.getAccessToken();
-      if (token != null) {
+      if (token != null && options.extra['requiresAuth'] != false) {
         options.headers["Authorization"] = "Bearer $token";
       }
 
@@ -91,73 +92,40 @@ class DioInterceptor extends Interceptor {
   /// May reject the response if validation or parsing fails.
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
-    try {
-      // Validate the response
-      ResponseValidator.validate(response);
-
-      // Prepare the data for ResponseModel.fromJson
-      Map<String, dynamic> data;
-      if (response.data is Map<String, dynamic>) {
-        // Use the response data directly if it's already a Map
-        data = Map<String, dynamic>.from(response.data);
-      } else if (response.data is String &&
-          (response.data as String).isNotEmpty) {
-        // If data is a string, it might be raw JSON that wasn't automatically parsed
-        try {
-          data = jsonDecode(response.data) as Map<String, dynamic>;
-        } catch (_) {
-          // If can't parse as JSON, wrap it in a Map
-          data = {"raw_string_data": response.data};
-        }
-      } else if (response.data is List) {
-        // If data is a List, wrap it in a map with a "data" key
-        data = {"data": response.data};
-      } else if (response.data == null) {
-        // If data is null, create an empty map
-        data = {};
-      } else {
-        // For any other type, wrap it in a map with a "data" key
-        data = {"data": response.data};
-      }
-
-      // Ensure status and logCurl are added to the data
-      data["status"] = response.statusCode;
-      data["log_curl"] = response.requestOptions.extra["log_curl"] ?? "";
-
-      // Create the standardized response model
-      response.data = ResponseModel.fromJson(data);
-
-      handler.next(response);
-    } catch (error) {
-      handler.reject(
-        DioException(
-          requestOptions: response.requestOptions,
-          error: error,
-          message: 'Response parsing failed',
-        ),
-      );
-    }
+    // Always allow the response through, let the handler deal with it
+    handler.next(response);
   }
 
-  /// Intercepts errors to handle authentication failures.
+  /// Intercepts errors to handle them appropriately.
   ///
-  /// This method checks for 401 Unauthorized responses and clears authentication
-  /// tokens when they are detected, forcing the user to log in again.
+  /// This method:
+  /// 1. Checks if we got a response (not a connection error)
+  /// 2. Marks connection errors for retry
+  /// 3. Passes other errors through
   ///
   /// Parameters:
-  ///   err - The error that occurred during the request
-  ///   handler - The error handler used to continue error processing
-  ///
-  /// Always rejects the request with the error, after performing any needed cleanup.
+  ///   err - The error that occurred
+  ///   handler - The error handler used to continue or reject
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
-    try {
-      if (err.response?.statusCode == 401) {
-        TokenManager.clearTokens();
-      }
-      handler.reject(err);
-    } catch (error) {
-      handler.reject(err);
+    // If we got a response, it's not a connection error
+    if (err.response != null) {
+      handler.next(err);
+      return;
     }
+
+    // For connection errors, mark as retry
+    if (err.type == DioExceptionType.connectionError) {
+      final retryOptions = err.requestOptions.copyWith(
+        extra: {
+          ...err.requestOptions.extra,
+          'isRetry': true,
+        },
+      );
+      handler.reject(err.copyWith(requestOptions: retryOptions));
+      return;
+    }
+
+    handler.next(err);
   }
 }

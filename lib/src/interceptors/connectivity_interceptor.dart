@@ -25,14 +25,17 @@ class ConnectivityInterceptor extends Interceptor {
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
-    if (!await NetworkChecker.hasConnection()) {
-      return handler.reject(
-        DioException(
-          requestOptions: options,
-          type: DioExceptionType.connectionError,
-          message: 'No internet connection',
-        ),
-      );
+    // Only check connectivity for initial requests, not retries
+    if (!options.extra.containsKey('isRetry')) {
+      if (!await NetworkChecker.hasConnection()) {
+        return handler.reject(
+          DioException(
+            requestOptions: options,
+            type: DioExceptionType.connectionError,
+            message: 'No internet connection',
+          ),
+        );
+      }
     }
     return handler.next(options);
   }
