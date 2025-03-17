@@ -1,3 +1,16 @@
+## 1.1.3
+
+* Improved error handling:
+  * Better handling of request preparation errors
+  * Added error type information to error responses
+  * Enhanced retry mechanism for connection errors
+  * Added more descriptive error messages
+* Updated DioInterceptor:
+  * Better authentication token handling
+  * Improved error type detection
+  * Added retry attempt tracking
+* Fixed issues with error propagation in DioRequestHandler
+
 ## 1.1.2
 
 * Enhanced RequestOptionsModel with new parameters:

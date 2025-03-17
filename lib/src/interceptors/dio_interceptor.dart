@@ -44,16 +44,21 @@ class DioInterceptor extends Interceptor {
     RequestInterceptorHandler handler,
   ) async {
     try {
+      // Add standard headers
       options.headers.addAll({
         "Content-Type": "application/json",
         "Accept": "application/json",
       });
 
-      final token = await TokenManager.getAccessToken();
-      if (token != null && options.extra['requiresAuth'] != false) {
-        options.headers["Authorization"] = "Bearer $token";
+      // Handle authentication
+      if (options.extra['requiresAuth'] != false) {
+        final token = await TokenManager.getAccessToken();
+        if (token != null) {
+          options.headers["Authorization"] = "Bearer $token";
+        }
       }
 
+      // Create cURL command for debugging
       final String logCurl = LogCurlRequest.create(
         options.method,
         options.uri.toString(),
@@ -65,11 +70,24 @@ class DioInterceptor extends Interceptor {
       options.extra.addAll({"log_curl": logCurl});
       handler.next(options);
     } catch (error) {
+      // Create a more descriptive error message
+      String errorMessage = 'Request preparation failed';
+      if (error is Exception) {
+        errorMessage = error.toString();
+      }
+
+      // Add the error type to help with error handling
+      final Map<String, dynamic> extra = {
+        ...options.extra,
+        'errorType': 'preparation_error',
+      };
+
       handler.reject(
         DioException(
-          requestOptions: options,
+          requestOptions: options.copyWith(extra: extra),
           error: error,
-          message: 'Request preparation failed',
+          message: errorMessage,
+          type: DioExceptionType.unknown,
         ),
       );
     }
@@ -111,8 +129,8 @@ class DioInterceptor extends Interceptor {
       return;
     }
 
-    // For connection errors, mark as retry
-    if (err.type == DioExceptionType.connectionError) {
+    // For connection errors, mark as retry if not already retrying
+    if (err.type == DioExceptionType.connectionError && !err.requestOptions.extra.containsKey('isRetry')) {
       final retryOptions = err.requestOptions.copyWith(
         extra: {
           ...err.requestOptions.extra,

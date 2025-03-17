@@ -49,45 +49,45 @@ class DioRequestHandler {
     required RequestOptionsModel requestOptions,
     String? methodOverride,
   }) async {
-    final headers = _header(hasBearerToken: requestOptions.hasBearerToken);
-    ApiClient.dio.options.headers.addAll(headers);
-
-    // Get the endpoint path based on the type of endpoint provided
-    String endpointPath;
-    if (endpoint is ApiEndpointInterface) {
-      endpointPath = endpoint.path;
-    } else if (endpoint is String) {
-      try {
-        // If a string is provided, first try to treat it as an endpoint name to look up
-        endpointPath = EndpointProvider.instance.getEndpoint(endpoint).path;
-      } catch (e) {
-        // If not found in the registry, assume it's a direct path
-        endpointPath = endpoint;
-      }
-    } else {
-      throw ArgumentError(
-        'Endpoint must be an ApiEndpointInterface or a registered endpoint name',
-      );
-    }
-
-    // Convert our model to a Dio Options object
-    final dioOptions = requestOptions.toDioOptions(method: methodOverride);
-
-    final String logCurl = LogCurlRequest.create(
-      dioOptions.method ?? 'GET',
-      endpointPath,
-      parameters: parameters,
-      data: data,
-      headers: headers,
-      showDebugPrint: false,
-    );
-
-    final CancelToken cancelToken = CancelToken();
-
+    String logCurl = '';
     try {
+      final headers = _header(hasBearerToken: requestOptions.hasBearerToken);
+      ApiClient.dio.options.headers.addAll(headers);
+
+      // Get the endpoint path based on the type of endpoint provided
+      String endpointPath;
+      if (endpoint is ApiEndpointInterface) {
+        endpointPath = endpoint.path;
+      } else if (endpoint is String) {
+        try {
+          // If a string is provided, first try to treat it as an endpoint name to look up
+          endpointPath = EndpointProvider.instance.getEndpoint(endpoint).path;
+        } catch (e) {
+          // If not found in the registry, assume it's a direct path
+          endpointPath = endpoint;
+        }
+      } else {
+        throw ArgumentError(
+          'Endpoint must be an ApiEndpointInterface or a registered endpoint name',
+        );
+      }
+
+      // Convert our model to a Dio Options object
+      final dioOptions = requestOptions.toDioOptions(method: methodOverride);
+
+      logCurl = LogCurlRequest.create(
+        dioOptions.method ?? 'GET',
+        endpointPath,
+        parameters: parameters,
+        data: data,
+        headers: headers,
+        showDebugPrint: false,
+      );
+
+      final CancelToken cancelToken = CancelToken();
       Response<ResponseModel> response;
 
-      switch (dioOptions.method?.toUpperCase() ?? HttpMethods.GET) {
+      switch (methodOverride?.toUpperCase() ?? HttpMethods.GET) {
         case HttpMethods.GET:
           response = await ApiClient.dio.get<ResponseModel>(
             endpointPath,
@@ -139,7 +139,12 @@ class DioRequestHandler {
     } on DioException catch (error, stackTrace) {
       // Determine error type based on Dio error type and status code
       ErrorType errorType;
-      if (error.response != null) {
+      
+      // Check for preparation errors first
+      if (error.requestOptions.extra.containsKey('errorType') && 
+          error.requestOptions.extra['errorType'] == 'preparation_error') {
+        errorType = ErrorType.validation;
+      } else if (error.response != null) {
         // If we have a response, determine error type from status code
         errorType = ErrorType.fromStatusCode(error.response!.statusCode ?? 500);
       } else {
@@ -147,9 +152,15 @@ class DioRequestHandler {
         errorType = ErrorType.fromDioErrorType(error.type);
       }
 
+      // Check if this is a retry attempt
+      final bool isRetry = error.requestOptions.extra.containsKey('isRetry');
+      final String message = isRetry 
+          ? 'Request failed after retry: ${error.message}'
+          : error.message ?? 'Request failed';
+
       return FailedResponseModel(
         statusCode: error.response?.statusCode ?? 500,
-        message: error.message ?? 'Request failed',
+        message: message,
         logCurl: error.requestOptions.extra["log_curl"] ?? logCurl,
         stackTrace: stackTrace,
         error: error,

@@ -119,8 +119,12 @@ class RequestOptionsModel {
   ///
   /// This method creates a new Options instance with all the relevant
   /// fields from this model.
-  Options toDioOptions() {
+  ///
+  /// Parameters:
+  ///   method - Optional HTTP method to override the default
+  Options toDioOptions({String? method}) {
     return Options(
+      method: method,
       headers: headers,
       responseType: responseType,
       validateStatus: validateStatus,
