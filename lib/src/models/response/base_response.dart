@@ -56,6 +56,6 @@ abstract class BaseResponse<T> {
   /// serialization functionality for the specific response type.
   ///
   /// Returns:
-  ///   A Map<String, dynamic> representation of the response
+  ///   A `Map<String, dynamic>` representation of the response
   Map<String, dynamic> toJson();
 }

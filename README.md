@@ -14,6 +14,7 @@ A powerful Flutter package that enhances Dio HTTP client with built-in support f
 - [Core Components](#-core-components)
 - [Making Requests](#-making-requests)
 - [Response Handling](#-response-handling)
+- [Authentication](#-authentication)
 - [Advanced Features](#-advanced-features)
 - [Best Practices](#-best-practices)
 - [Troubleshooting](#-troubleshooting)
@@ -41,7 +42,7 @@ Add to your pubspec.yaml:
 
 ```yaml
 dependencies:
-  dio_flow: ^1.1.6
+  dio_flow: ^1.1.7
 ```
 
 ## 🚀 Getting Started
@@ -139,6 +140,73 @@ The package includes several built-in interceptors:
 5. **ConnectivityInterceptor**: Handles network state
 6. **CacheInterceptor**: Manages response caching
 
+## 🔑 Authentication
+
+### Token Management
+
+```dart
+// Set tokens after successful login
+await TokenManager.setTokens(
+  accessToken: 'your_access_token',
+  refreshToken: 'your_refresh_token',
+);
+
+// Get current access token
+final token = await TokenManager.getAccessToken();
+
+// Clear tokens on logout
+await TokenManager.clearTokens();
+
+// Check if user is authenticated
+final isAuthenticated = await TokenManager.hasValidToken();
+```
+
+### Protected Requests
+
+```dart
+// Make authenticated request
+final response = await DioRequestHandler.get(
+  'user/profile',
+  requestOptions: RequestOptionsModel(
+    hasBearerToken: true, // This will automatically include the token
+  ),
+);
+
+// Handle token expiration
+if (response.error?.errorType == ErrorType.unauthorized) {
+  // Token expired, handle refresh or logout
+}
+```
+
+## 🌐 Endpoint Configuration
+
+### Basic Endpoints
+
+```dart
+// Register endpoints
+EndpointProvider.instance.register('login', '/auth/login');
+EndpointProvider.instance.register('users', '/api/users');
+
+// Use registered endpoints
+final response = await DioRequestHandler.post(
+  'login',
+  data: {'email': email, 'password': password},
+);
+```
+
+### Dynamic Endpoints
+
+```dart
+// Register endpoint with parameters
+EndpointProvider.instance.register('user_details', '/api/users/{id}');
+
+// Use with path parameters
+final response = await DioRequestHandler.get(
+  'user_details',
+  pathParameters: {'id': '123'},
+);
+```
+
 ## 🔄 Advanced Features
 
 ### Caching
@@ -188,6 +256,54 @@ final nestedValue = JsonUtils.getNestedValue(
 );
 ```
 
+### Request Queueing
+
+```dart
+// Queue multiple requests
+final responses = await Future.wait([
+  DioRequestHandler.get('users'),
+  DioRequestHandler.get('posts'),
+  DioRequestHandler.get('comments'),
+]);
+
+// Handle rate limiting automatically
+final rateLimitedResponse = await DioRequestHandler.get(
+  'high-frequency-endpoint',
+  requestOptions: RequestOptionsModel(
+    shouldRateLimit: true,
+    rateLimit: 30, // requests per minute
+  ),
+);
+```
+
+### Custom Response Types
+
+```dart
+class PaginatedResponse<T> {
+  final List<T> items;
+  final int total;
+  final int page;
+  
+  PaginatedResponse.fromJson(
+    Map<String, dynamic> json,
+    T Function(Map<String, dynamic>) converter,
+  )   : items = (json['data'] as List)
+            .map((item) => converter(item))
+            .toList(),
+        total = json['total'] ?? 0,
+        page = json['page'] ?? 1;
+}
+
+// Use with typed response
+final response = await DioRequestHandler.get<PaginatedResponse<User>>(
+  'users',
+  converter: (json) => PaginatedResponse.fromJson(
+    json,
+    (item) => User.fromJson(item),
+  ),
+);
+```
+
 ## 🛠️ Best Practices
 
 1. **Initialize Early**:
@@ -230,6 +346,75 @@ final nestedValue = JsonUtils.getNestedValue(
    );
    ```
 
+### Error Handling Patterns
+
+```dart
+// Create a reusable error handler
+Future<T> handleApiResponse<T>(ResponseModel response) async {
+  if (response.isSuccess) {
+    return response.data as T;
+  }
+
+  switch (response.error?.errorType) {
+    case ErrorType.network:
+      throw NetworkException(response.error!.message);
+    case ErrorType.unauthorized:
+      await handleUnauthorized();
+      throw AuthException(response.error!.message);
+    case ErrorType.validation:
+      throw ValidationException(response.error!.message);
+    default:
+      throw ApiException(response.error?.message ?? 'Unknown error');
+  }
+}
+
+// Use in your code
+try {
+  final users = await handleApiResponse<List<User>>(
+    await DioRequestHandler.get('users'),
+  );
+  // Use users data
+} on NetworkException catch (e) {
+  // Handle network error
+} on AuthException catch (e) {
+  // Handle auth error
+} on ValidationException catch (e) {
+  // Handle validation error
+} on ApiException catch (e) {
+  // Handle other API errors
+}
+```
+
+### Repository Pattern
+
+```dart
+class UserRepository {
+  Future<User> getCurrentUser() async {
+    final response = await DioRequestHandler.get<User>(
+      'users/me',
+      requestOptions: RequestOptionsModel(
+        hasBearerToken: true,
+        shouldCache: true,
+        cacheMaxAge: const Duration(minutes: 5),
+      ),
+      converter: (json) => User.fromJson(json),
+    );
+    
+    return handleApiResponse<User>(response);
+  }
+  
+  Future<void> updateProfile(UserUpdateRequest request) async {
+    final response = await DioRequestHandler.put(
+      'users/me',
+      data: request.toJson(),
+      requestOptions: RequestOptionsModel(hasBearerToken: true),
+    );
+    
+    await handleApiResponse(response);
+  }
+}
+```
+
 ## 🔍 Troubleshooting
 
 Common issues and solutions:
@@ -247,6 +432,24 @@ Common issues and solutions:
    - Check connectivity status
    - Verify retry options are configured
    - Examine cURL logs for request details
+
+### Debug Mode
+
+```dart
+// Enable detailed logging
+DioFlowConfig.initialize(
+  baseUrl: 'https://api.example.com',
+  debugMode: true, // This will enable detailed logging
+);
+
+// Log specific requests
+final response = await DioRequestHandler.get(
+  'users',
+  requestOptions: RequestOptionsModel(
+    shouldLogRequest: true, // Log this specific request
+  ),
+);
+```
 
 ## 🤝 Contributing
 

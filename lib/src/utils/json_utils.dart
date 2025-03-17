@@ -13,7 +13,7 @@ class JsonUtils {
   /// Unlike the standard [jsonDecode], this method:
   /// - Returns null instead of throwing on invalid JSON
   /// - Returns an empty map if the input is empty
-  /// - Ensures the result is a Map<String, dynamic> if not null
+  /// - Ensures the result is a `Map<String, dynamic>` if not null
   ///
   /// Parameters:
   ///   jsonString - The JSON string to parse

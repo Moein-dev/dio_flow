@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-/// Extension methods for Map<String, dynamic> to simplify JSON operations.
+/// Extension methods for `Map<String, dynamic>` to simplify JSON operations.
 extension JsonMapExtensions on Map<String, dynamic> {
   /// Safely gets a value from the map.
   ///

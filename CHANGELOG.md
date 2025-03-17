@@ -1,3 +1,9 @@
+## 1.1.7
+* Code quality improvements:
+  * Added more documentation and examples
+  * Enhanced code organization
+  * Improved type safety throughout
+  
 ## 1.1.6
 
 * Enhanced response handling and type conversion:
