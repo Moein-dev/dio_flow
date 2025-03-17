@@ -1,142 +1,160 @@
 import 'package:dio/dio.dart';
+import 'package:dio_flow/src/models/retry_options.dart';
 
-/// A model representing all configurable options for API requests.
+/// Model class for configuring request options.
 ///
-/// This model provides a structured way to specify common request options,
-/// including auth, headers, and cache control, without needing to directly
-/// manipulate the Dio Options object. It makes request configuration more
-/// consistent, readable, and type-safe.
+/// This class provides a way to customize how requests are made, including
+/// authentication, caching, retries, and other Dio-specific options.
 class RequestOptionsModel {
-  /// Whether to attach the bearer token to the request
+  /// Whether to include bearer token authentication header.
   final bool hasBearerToken;
 
-  /// Whether to disable caching for this specific request
-  final bool noCache;
+  /// Whether to cache the response.
+  final bool shouldCache;
 
-  /// Custom cache duration for this request, overriding the default
-  final Duration? cacheMaxAge;
+  /// How long to cache the response.
+  final Duration cacheDuration;
 
-  /// Content type for the request (e.g., 'application/json')
-  final String? contentType;
+  /// Configuration for request retries.
+  final RetryOptions? retryOptions;
 
-  /// Response type to expect (defaults to JSON)
-  final ResponseType responseType;
-
-  /// Additional headers to include with the request
+  /// Custom headers to include in the request.
   final Map<String, dynamic>? headers;
 
-  /// Additional custom parameters for the request
+  /// Extra parameters for the request.
   final Map<String, dynamic>? extra;
 
-  /// Whether to log the curl command for this request
-  final bool logCurl;
+  /// The response type (e.g., json, stream, plain, bytes).
+  final ResponseType? responseType;
 
-  /// Creates a new RequestOptionsModel with the specified parameters.
+  /// Custom status code validator.
+  final ValidateStatus? validateStatus;
+
+  /// Whether to receive data when status code indicates error.
+  final bool? receiveDataWhenStatusError;
+
+  /// Whether to follow redirects.
+  final bool? followRedirects;
+
+  /// Maximum number of redirects to follow.
+  final int? maxRedirects;
+
+  /// Whether to use persistent connection.
+  final bool? persistentConnection;
+
+  /// Whether this request requires authentication.
+  final bool requiresAuth;
+
+  /// Number of times to retry the request on failure.
+  final int retryCount;
+
+  /// Interval between retries.
+  final Duration retryInterval;
+
+  /// Creates a new request options model with the specified configuration.
   ///
-  /// Parameters:
-  ///   hasBearerToken - Whether to include the auth token (default: false)
-  ///   noCache - Whether to disable caching for this request (default: false)
-  ///   cacheMaxAge - Custom cache duration for this request (default: null, uses global setting)
-  ///   contentType - Content type header (default: application/json)
-  ///   responseType - Response type (default: ResponseType.json)
-  ///   headers - Additional headers to include (default: empty map)
-  ///   extra - Additional parameters for the Dio options (default: empty map)
-  ///   logCurl - Whether to log the curl command (default: true)
+  /// Most parameters are optional and have sensible defaults:
+  /// - [hasBearerToken] defaults to true
+  /// - [shouldCache] defaults to false
+  /// - [cacheDuration] defaults to 5 minutes
+  /// - [requiresAuth] defaults to true
+  /// - [retryCount] defaults to 3
+  /// - [retryInterval] defaults to 1 second
   const RequestOptionsModel({
-    this.hasBearerToken = false,
-    this.noCache = false,
-    this.cacheMaxAge,
-    this.contentType,
-    this.responseType = ResponseType.json,
+    this.hasBearerToken = true,
+    this.shouldCache = false,
+    this.cacheDuration = const Duration(minutes: 5),
+    this.retryOptions,
     this.headers,
     this.extra,
-    this.logCurl = true,
+    this.responseType,
+    this.validateStatus,
+    this.receiveDataWhenStatusError,
+    this.followRedirects,
+    this.maxRedirects,
+    this.persistentConnection,
+    this.requiresAuth = true,
+    this.retryCount = 3,
+    this.retryInterval = const Duration(seconds: 1),
   });
 
-  /// Converts this model to a Dio Options object.
-  ///
-  /// This method creates a properly configured Dio Options object with
-  /// all the settings specified in this model.
-  ///
-  /// Parameters:
-  ///   method - The HTTP method for the request (GET, POST, etc.)
-  ///
-  /// Returns:
-  ///   A configured Dio Options object ready to use with requests
-  Options toDioOptions({String? method}) {
-    // Start with a base extra map
-    final Map<String, dynamic> extraMap = {};
-
-    // Add cache-related options
-    if (noCache) {
-      extraMap['no_cache'] = true;
-    }
-    if (cacheMaxAge != null) {
-      extraMap['cache_maxAge'] = cacheMaxAge;
-    }
-
-    // Add any custom extra params
-    if (extra != null && extra!.isNotEmpty) {
-      extraMap.addAll(extra!);
-    }
-
-    // Create the Options object
-    return Options(
-      method: method,
-      contentType: contentType ?? 'application/json',
-      responseType: responseType,
-      headers: headers,
-      extra: extraMap,
-    );
-  }
-
-  /// Creates a copy of this model with the specified changes.
-  ///
-  /// This method allows for easily creating modified versions of an existing
-  /// RequestOptionsModel without changing the original.
-  ///
-  /// Returns:
-  ///   A new RequestOptionsModel with the specified changes
+  /// Creates a copy of this RequestOptionsModel with the specified fields replaced with new values.
   RequestOptionsModel copyWith({
     bool? hasBearerToken,
-    bool? noCache,
-    Duration? cacheMaxAge,
-    String? contentType,
-    ResponseType? responseType,
+    bool? shouldCache,
+    Duration? cacheDuration,
+    RetryOptions? retryOptions,
     Map<String, dynamic>? headers,
     Map<String, dynamic>? extra,
-    bool? logCurl,
+    ResponseType? responseType,
+    ValidateStatus? validateStatus,
+    bool? receiveDataWhenStatusError,
+    bool? followRedirects,
+    int? maxRedirects,
+    bool? persistentConnection,
+    bool? requiresAuth,
+    int? retryCount,
+    Duration? retryInterval,
   }) {
     return RequestOptionsModel(
       hasBearerToken: hasBearerToken ?? this.hasBearerToken,
-      noCache: noCache ?? this.noCache,
-      cacheMaxAge: cacheMaxAge ?? this.cacheMaxAge,
-      contentType: contentType ?? this.contentType,
-      responseType: responseType ?? this.responseType,
+      shouldCache: shouldCache ?? this.shouldCache,
+      cacheDuration: cacheDuration ?? this.cacheDuration,
+      retryOptions: retryOptions ?? this.retryOptions,
       headers: headers ?? this.headers,
       extra: extra ?? this.extra,
-      logCurl: logCurl ?? this.logCurl,
+      responseType: responseType ?? this.responseType,
+      validateStatus: validateStatus ?? this.validateStatus,
+      receiveDataWhenStatusError: receiveDataWhenStatusError ?? this.receiveDataWhenStatusError,
+      followRedirects: followRedirects ?? this.followRedirects,
+      maxRedirects: maxRedirects ?? this.maxRedirects,
+      persistentConnection: persistentConnection ?? this.persistentConnection,
+      requiresAuth: requiresAuth ?? this.requiresAuth,
+      retryCount: retryCount ?? this.retryCount,
+      retryInterval: retryInterval ?? this.retryInterval,
+    );
+  }
+
+  /// Converts this model to Dio options.
+  ///
+  /// This method creates a new Options instance with all the relevant
+  /// fields from this model.
+  Options toDioOptions() {
+    return Options(
+      headers: headers,
+      responseType: responseType,
+      validateStatus: validateStatus,
+      receiveDataWhenStatusError: receiveDataWhenStatusError,
+      followRedirects: followRedirects,
+      maxRedirects: maxRedirects,
+      persistentConnection: persistentConnection,
+      extra: {
+        ...?extra,
+        'requiresAuth': requiresAuth,
+        'retryCount': retryCount,
+        'retryInterval': retryInterval,
+      },
     );
   }
 
   /// Predefined options for requests that should never be cached.
   static const RequestOptionsModel noApiCache = RequestOptionsModel(
-    noCache: true,
+    shouldCache: false,
   );
 
   /// Predefined options for requests with a short cache duration (1 minute).
   static const RequestOptionsModel shortApiCache = RequestOptionsModel(
-    cacheMaxAge: Duration(minutes: 1),
+    cacheDuration: Duration(minutes: 1),
   );
 
   /// Predefined options for requests with a medium cache duration (15 minutes).
   static const RequestOptionsModel mediumApiCache = RequestOptionsModel(
-    cacheMaxAge: Duration(minutes: 15),
+    cacheDuration: Duration(minutes: 15),
   );
 
   /// Predefined options for requests with a long cache duration (1 hour).
   static const RequestOptionsModel longApiCache = RequestOptionsModel(
-    cacheMaxAge: Duration(hours: 1),
+    cacheDuration: Duration(hours: 1),
   );
 
   /// Predefined options for requests that require authentication.

@@ -1,6 +1,6 @@
 name: dio_flow
-description: "A Flutter package providing an enhanced Dio client with built-in support for caching, retry, authentication, pagination utilities and standardized JSON handling."
-version: 1.1.1
+description: A powerful and flexible HTTP client for Dart and Flutter, built on top of Dio with enhanced features for handling network requests, caching, and authentication.
+version: 1.1.2
 homepage: https://github.com/Moein-dev/dio_flow
 repository: https://github.com/Moein-dev/dio_flow
 issue_tracker: https://github.com/Moein-dev/dio_flow/issues

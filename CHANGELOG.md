@@ -1,3 +1,14 @@
+## 1.1.2
+
+* Enhanced RequestOptionsModel with new parameters:
+  * Added `requiresAuth` for explicit authentication control
+  * Added `retryCount` and `retryInterval` for retry configuration
+  * Renamed `noCache` to `shouldCache` for clarity
+  * Added `cacheDuration` for explicit cache control
+* Added new RetryOptions model for comprehensive retry configuration
+* Improved documentation and parameter naming for better clarity
+* Added predefined retry configurations for common use cases
+
 ## 1.1.1
 
 * Improved network connectivity handling:
