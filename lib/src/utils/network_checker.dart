@@ -14,7 +14,7 @@ class NetworkChecker {
   /// If any lookup succeeds, it indicates that the device has an active internet connection.
   ///
   /// Returns:
-  ///   A Future<bool> that resolves to true if there is an active internet connection,
+  ///   A `Future<bool>` that resolves to true if there is an active internet connection,
   ///   or false if there is no connectivity or none of the servers can be reached.
   static Future<bool> hasConnection() async {
     try {
@@ -56,7 +56,7 @@ class NetworkChecker {
   /// connectivity changes and react accordingly in the application.
   ///
   /// Returns:
-  ///   A Stream<bool> that emits true when there is an active internet connection,
+  ///   A `Stream<bool>` that emits true when there is an active internet connection,
   ///   and false when there is no connectivity.
   static Stream<bool> get connectionStream async* {
     while (true) {
