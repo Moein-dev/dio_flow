@@ -1,4 +1,5 @@
 import 'dart:developer';
+import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:dio_flow/src/base/api_client.dart';
 import 'package:dio_flow/src/base/api_endpoint_interface.dart';
@@ -90,11 +91,11 @@ class DioRequestHandler {
       );
 
       final CancelToken cancelToken = CancelToken();
-      Response<ResponseModel> response;
+      Response response;
 
       switch (methodOverride?.toUpperCase() ?? HttpMethods.GET) {
         case HttpMethods.GET:
-          response = await ApiClient.dio.get<ResponseModel>(
+          response = await ApiClient.dio.get(
             endpointPath,
             queryParameters: parameters,
             options: dioOptions,
@@ -103,7 +104,7 @@ class DioRequestHandler {
           );
           break;
         case HttpMethods.POST:
-          response = await ApiClient.dio.post<ResponseModel>(
+          response = await ApiClient.dio.post(
             endpointPath,
             queryParameters: parameters,
             data: data,
@@ -112,7 +113,7 @@ class DioRequestHandler {
           );
           break;
         case HttpMethods.PUT:
-          response = await ApiClient.dio.put<ResponseModel>(
+          response = await ApiClient.dio.put(
             endpointPath,
             queryParameters: parameters,
             data: data,
@@ -121,7 +122,7 @@ class DioRequestHandler {
           );
           break;
         case HttpMethods.PATCH:
-          response = await ApiClient.dio.patch<ResponseModel>(
+          response = await ApiClient.dio.patch(
             endpointPath,
             queryParameters: parameters,
             options: dioOptions,
@@ -129,7 +130,7 @@ class DioRequestHandler {
           );
           break;
         case HttpMethods.DELETE:
-          response = await ApiClient.dio.delete<ResponseModel>(
+          response = await ApiClient.dio.delete(
             endpointPath,
             queryParameters: parameters,
             options: dioOptions,
@@ -140,7 +141,80 @@ class DioRequestHandler {
           throw Exception('Unsupported HTTP method: ${dioOptions.method}');
       }
 
-      return response.data!;
+      // Convert response data to Map<String, dynamic> if it's not already
+      Map<String, dynamic> responseData;
+      if (response.data is Map<String, dynamic>) {
+        responseData = Map<String, dynamic>.from(response.data);
+      } else if (response.data is List) {
+        // Handle array responses by wrapping them in a data field
+        responseData = {
+          'data': response.data,
+          'status': response.statusCode,
+        };
+      } else if (response.data is String && response.data.isNotEmpty) {
+        try {
+          // Try to parse string as JSON first
+          final decoded = Map<String, dynamic>.from(jsonDecode(response.data));
+          responseData = decoded;
+        } catch (e) {
+          // If not JSON, wrap the string in a data field
+          responseData = {
+            'data': response.data,
+            'status': response.statusCode,
+          };
+        }
+      } else if (response.data == null) {
+        // Handle null responses (like for 204 No Content)
+        responseData = {
+          'status': response.statusCode,
+          'message': 'Success',
+        };
+      } else {
+        // For any other type, wrap it in a data field
+        responseData = {
+          'data': response.data,
+          'status': response.statusCode,
+        };
+      }
+
+      // Ensure status code is present
+      if (!responseData.containsKey('status') && !responseData.containsKey('statusCode')) {
+        responseData['status'] = response.statusCode;
+      }
+
+      // Add log curl
+      responseData['log_curl'] = logCurl;
+
+      // Add headers if they contain important information
+      if (response.headers.map.isNotEmpty) {
+        final relevantHeaders = <String, dynamic>{};
+        final headersToInclude = [
+          'content-type',
+          'authorization',
+          'x-total-count',
+          'x-pagination-total',
+          'x-total-pages',
+        ];
+
+        for (final header in headersToInclude) {
+          if (response.headers.map.containsKey(header)) {
+            relevantHeaders[header] = response.headers.value(header);
+          }
+        }
+
+        if (relevantHeaders.isNotEmpty) {
+          responseData['headers'] = relevantHeaders;
+        }
+      }
+
+      // Create appropriate response model based on status code
+      final statusCode = response.statusCode ?? 500;
+      if (statusCode >= 200 && statusCode < 300) {
+        return SuccessResponseModel.fromJson(responseData);
+      } else {
+        return FailedResponseModel.fromJson(responseData);
+      }
+
     } on DioException catch (error, stackTrace) {
       // Determine error type based on Dio error type and status code
       ErrorType errorType;

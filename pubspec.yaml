@@ -1,6 +1,6 @@
 name: dio_flow
-description: A powerful and flexible HTTP client for Dart and Flutter, built on top of Dio with enhanced features for handling network requests, caching, and authentication.
-version: 1.1.4
+description: A powerful and flexible HTTP client for Dart/Flutter, built on top of dio. Provides advanced features like request queueing, automatic retries, caching, and more.
+version: 1.1.6
 homepage: https://github.com/Moein-dev/dio_flow
 repository: https://github.com/Moein-dev/dio_flow
 issue_tracker: https://github.com/Moein-dev/dio_flow/issues
@@ -14,7 +14,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  dio: ^5.8.0+1
+  dio: ^5.8.0
   shared_preferences: ^2.5.2
   log_curl_request: ^0.0.5
   colorful_log_plus: ^1.0.8

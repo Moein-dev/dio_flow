@@ -1,3 +1,28 @@
+## 1.1.6
+
+* Enhanced response handling and type conversion:
+  * Improved handling of different response types (Map, List, String, null)
+  * Added proper response wrapping for non-standard responses
+  * Better handling of error responses with proper type conversion
+  * Added support for extracting important headers
+  * Improved status code handling and response type determination
+* Updated dependencies:
+  * Updated dio to ^5.8.0
+  * Ensured compatibility with latest Flutter versions
+
+## 1.1.5
+
+* Improved response handling:
+  * Enhanced response type conversion to properly handle all response types (arrays, strings, null, etc.)
+  * Added automatic wrapping of non-object responses in standardized format
+  * Improved JSON parsing with better error handling
+  * Added relevant header information to response data
+  * Fixed status code handling with proper null safety
+* Better success/failure response determination:
+  * Clear separation between success (200-299) and failure responses
+  * Consistent response structure across all response types
+  * Improved error message handling
+
 ## 1.1.4
 
 * Fixed cURL logging to include full URLs:
