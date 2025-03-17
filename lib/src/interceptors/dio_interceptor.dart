@@ -58,10 +58,10 @@ class DioInterceptor extends Interceptor {
         }
       }
 
-      // Create cURL command for debugging
+      // Create cURL command for debugging with full URL
       final String logCurl = LogCurlRequest.create(
         options.method,
-        options.uri.toString(),
+        options.uri.toString(), // options.uri already contains the full URL
         parameters: options.queryParameters,
         data: options.data,
         headers: options.headers,

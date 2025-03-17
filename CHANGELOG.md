@@ -1,3 +1,10 @@
+## 1.1.4
+
+* Fixed cURL logging to include full URLs:
+  * Updated DioRequestHandler to use complete URLs in cURL logs
+  * Fixed URL handling in DioInterceptor cURL generation
+  * Improved request debugging with complete URL information
+
 ## 1.1.3
 
 * Improved error handling:

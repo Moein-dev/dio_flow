@@ -75,9 +75,14 @@ class DioRequestHandler {
       // Convert our model to a Dio Options object
       final dioOptions = requestOptions.toDioOptions(method: methodOverride);
 
+      // Create full URL by combining base URL and endpoint path
+      final String fullUrl = Uri.parse(ApiClient.dio.options.baseUrl)
+          .resolve(endpointPath)
+          .toString();
+
       logCurl = LogCurlRequest.create(
         dioOptions.method ?? 'GET',
-        endpointPath,
+        fullUrl,
         parameters: parameters,
         data: data,
         headers: headers,
