@@ -142,24 +142,36 @@ The package includes several built-in interceptors:
 
 ## 🔑 Authentication
 
-### Token Management
+The package provides robust token management with persistent storage:
 
 ```dart
-// Set tokens after successful login
+// Initialize token manager (call this in your main.dart)
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await TokenManager.initialize();
+  runApp(MyApp());
+}
+
+// Setting tokens with persistence
 await TokenManager.setTokens(
   accessToken: 'your_access_token',
   refreshToken: 'your_refresh_token',
+  expiry: DateTime.now().add(Duration(hours: 1)),
 );
 
-// Get current access token
+// Getting access token (automatically handles refresh if needed)
 final token = await TokenManager.getAccessToken();
 
-// Clear tokens on logout
+// Clearing tokens
 await TokenManager.clearTokens();
-
-// Check if user is authenticated
-final isAuthenticated = await TokenManager.hasValidToken();
 ```
+
+Key features:
+- Persistent token storage using SharedPreferences
+- Automatic token loading on app initialization
+- Token expiry tracking and automatic refresh
+- Secure token management with proper error handling
+- Asynchronous operations for better performance
 
 ### Protected Requests
 

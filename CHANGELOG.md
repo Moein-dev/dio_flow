@@ -1,10 +1,28 @@
-## 1.1.7
+## [1.1.8] - 2024-03-21
+
+### Added
+- Persistent token storage using SharedPreferences
+- Automatic token loading on app initialization
+- Improved token management with expiry tracking
+- Better error handling for token operations
+
+### Changed
+- Made token operations asynchronous for better performance
+- Enhanced token refresh mechanism
+- Improved error messages for token-related operations
+
+### Fixed
+- Token persistence between app restarts
+- Token expiry handling
+- Memory-only token storage issues
+
+## [1.1.7]
 * Code quality improvements:
   * Added more documentation and examples
   * Enhanced code organization
   * Improved type safety throughout
   
-## 1.1.6
+## [1.1.6]
 
 * Enhanced response handling and type conversion:
   * Improved handling of different response types (Map, List, String, null)
@@ -16,7 +34,7 @@
   * Updated dio to ^5.8.0
   * Ensured compatibility with latest Flutter versions
 
-## 1.1.5
+## [1.1.5]
 
 * Improved response handling:
   * Enhanced response type conversion to properly handle all response types (arrays, strings, null, etc.)
@@ -29,14 +47,14 @@
   * Consistent response structure across all response types
   * Improved error message handling
 
-## 1.1.4
+## [1.1.4]
 
 * Fixed cURL logging to include full URLs:
   * Updated DioRequestHandler to use complete URLs in cURL logs
   * Fixed URL handling in DioInterceptor cURL generation
   * Improved request debugging with complete URL information
 
-## 1.1.3
+## [1.1.3]
 
 * Improved error handling:
   * Better handling of request preparation errors
@@ -49,7 +67,7 @@
   * Added retry attempt tracking
 * Fixed issues with error propagation in DioRequestHandler
 
-## 1.1.2
+## [1.1.2]
 
 * Enhanced RequestOptionsModel with new parameters:
   * Added `requiresAuth` for explicit authentication control
@@ -60,8 +78,8 @@
 * Improved documentation and parameter naming for better clarity
 * Added predefined retry configurations for common use cases
 
-## 1.1.1
-
+## [1.1.1
+]
 * Improved network connectivity handling:
   * Made connectivity checks less aggressive
   * Added multiple domain checks for better reliability
@@ -74,7 +92,7 @@
   * Added option to skip authentication for specific requests
   * Better token management
 
-## 1.1.0
+## [1.1.0]
 
 * Added support for Flutter 3.19.0
 * Updated dependencies
@@ -82,7 +100,7 @@
 * Added more documentation
 * Added example project
 
-## 1.0.0
+## [1.0.0]
 
 First stable release of dio_flow with significant improvements and optimizations.
 
@@ -107,7 +125,7 @@ First stable release of dio_flow with significant improvements and optimizations
 - Improved error recovery for network failures
 - Fixed memory usage in large response handling
 
-## 0.0.1
+## [0.0.1]
 
 Initial release of dio_flow with the following features:
 
