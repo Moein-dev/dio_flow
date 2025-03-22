@@ -1,20 +1,11 @@
-## [1.1.9] - 2024-03-22
-
-### Added
-- Persistent token storage using SharedPreferences
-- Automatic token loading on app initialization
-- Improved token management with expiry tracking
-- Better error handling for token operations
-
-### Changed
-- Made token operations asynchronous for better performance
-- Enhanced token refresh mechanism
-- Improved error messages for token-related operations
+## [1.1.10] - 2024-03-21
 
 ### Fixed
-- Token persistence between app restarts
-- Token expiry handling
-- Memory-only token storage issues
+- Fixed cache key generation for non-string query parameters
+
+## [1.1.9] - 2024-03-21
+
+### Fixed
 - Fixed cache key generation for non-string query parameters
 - Improved handling of boolean and numeric query parameters in cache interceptor
 

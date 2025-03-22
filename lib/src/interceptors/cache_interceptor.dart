@@ -67,7 +67,14 @@ class CacheInterceptor extends Interceptor {
           data: cacheEntry['data'],
           statusCode: 200,
           headers: Headers.fromMap(
-            Map<String, List<String>>.from(cacheEntry['headers']),
+            Map<String, List<String>>.from(
+              (cacheEntry['headers'] as Map<String, dynamic>).map(
+                (key, value) => MapEntry(
+                  key,
+                  (value as List<dynamic>).map((e) => e.toString()).toList(),
+                ),
+              ),
+            ),
           ),
         );
         return handler.resolve(response);
