@@ -119,7 +119,11 @@ class CacheInterceptor extends Interceptor {
           ..write(options.path);
     if (options.queryParameters.isNotEmpty) {
       buffer.write('?');
-      buffer.write(Uri(queryParameters: options.queryParameters).query);
+      // Convert all parameter values to strings
+      final stringParams = options.queryParameters.map(
+        (key, value) => MapEntry(key, value?.toString() ?? ''),
+      );
+      buffer.write(Uri(queryParameters: stringParams).query);
     }
 
     return buffer.toString();
