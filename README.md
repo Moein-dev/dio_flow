@@ -54,7 +54,7 @@ import 'package:dio_flow/dio_flow.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // 1. Configure the client
   DioFlowConfig.initialize(
     baseUrl: 'https://api.example.com',
@@ -62,10 +62,10 @@ void main() async {
     receiveTimeout: const Duration(seconds: 30),
     sendTimeout: const Duration(seconds: 30),
   );
-  
+
   // 2. Initialize the client
   await ApiClient.initialize();
-  
+
   runApp(MyApp());
 }
 ```
@@ -149,6 +149,31 @@ The package provides robust token management with persistent storage:
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await TokenManager.initialize();
+
+  // Register refresh logic (consumer-side). Optional — if you don't set it,
+  // automatic refresh will be disabled and TokenManager will return null on expired token.
+    TokenManager.setRefreshHandler((refreshToken) async {
+    // Use DioRequestHandler to call refresh endpoint (consumer controls endpoint details).
+    final refreshResp = await DioRequestHandler.post<Map<String, dynamic>>(
+      'auth/refresh',
+      data: {'refresh_token': refreshToken},
+      requestOptions: RequestOptionsModel(hasBearerToken: false),
+    );
+
+    if (!refreshResp.isSuccess) {
+      throw ApiException('Refresh failed: ${refreshResp.error?.message ?? 'unknown'}');
+    }
+
+    final data = refreshResp.data!;
+    final expiresIn = (data['expires_in'] as int?) ?? 3600;
+
+    return RefreshTokenResponse(
+      accessToken: data['access_token'] as String,
+      refreshToken: data['refresh_token'] as String,
+      expiry: DateTime.now().add(Duration(seconds: expiresIn)),
+    );
+  });
+
   runApp(MyApp());
 }
 
@@ -159,19 +184,33 @@ await TokenManager.setTokens(
   expiry: DateTime.now().add(Duration(hours: 1)),
 );
 
-// Getting access token (automatically handles refresh if needed)
-final token = await TokenManager.getAccessToken();
+// Check presence/validity (auto-refresh performed if expired and handler is set)
+final hasToken = await TokenManager.hasAccessToken(); // returns true/false
+
+// Getting access token (will automatically refresh if expired and a handler is configured)
+final token = await TokenManager.getAccessToken(); // can be null if no handler and expired
 
 // Clearing tokens
 await TokenManager.clearTokens();
 ```
 
 Key features:
-- Persistent token storage using SharedPreferences
-- Automatic token loading on app initialization
-- Token expiry tracking and automatic refresh
-- Secure token management with proper error handling
-- Asynchronous operations for better performance
+
+- Persistent token storage using SharedPreferences (tokens survive app restarts).
+
+- RefreshTokenHandler typedef — consumer provides a small callback that receives the refresh token and returns a RefreshTokenResponse (access, refresh, expiry). This keeps the package network-agnostic.
+
+- TokenManager.setRefreshHandler(...) — register refresh logic at startup or runtime (optional).
+
+- Automatic refresh behavior — hasAccessToken() and getAccessToken() will automatically attempt to refresh when the access token is expired only if a refresh handler has been set. If no handler is provided, expired tokens are treated as absent (methods return false/null).
+
+-Single-flight refresh protection — internal _refreshCompleter ensures only one refresh request runs at a time; concurrent callers wait for that single result.
+
+- Tokens returned by the refresh handler are persisted via setTokens() (keeps state consistent across restarts).
+
+- All token operations are asynchronous for non-blocking startup and safer IO.
+
+- getAccessToken() behavior is unified: it either returns a valid token, triggers refresh (if handler exists), or returns null (if expired and no handler).
 
 ### Protected Requests
 
@@ -295,7 +334,7 @@ class PaginatedResponse<T> {
   final List<T> items;
   final int total;
   final int page;
-  
+
   PaginatedResponse.fromJson(
     Map<String, dynamic> json,
     T Function(Map<String, dynamic>) converter,
@@ -319,6 +358,7 @@ final response = await DioRequestHandler.get<PaginatedResponse<User>>(
 ## 🛠️ Best Practices
 
 1. **Initialize Early**:
+
    ```dart
    void main() async {
      await ApiClient.initialize();
@@ -327,6 +367,7 @@ final response = await DioRequestHandler.get<PaginatedResponse<User>>(
    ```
 
 2. **Handle Errors Consistently**:
+
    ```dart
    try {
      final response = await DioRequestHandler.get('endpoint');
@@ -342,16 +383,17 @@ final response = await DioRequestHandler.get<PaginatedResponse<User>>(
    ```
 
 3. **Use Type-Safe Responses**:
+
    ```dart
    class UserResponse {
      final String id;
      final String name;
-     
+
      UserResponse.fromJson(Map<String, dynamic> json)
          : id = json['id'],
            name = json['name'];
    }
-   
+
    final response = await DioRequestHandler.get<UserResponse>(
      'users/me',
      converter: (json) => UserResponse.fromJson(json),
@@ -411,17 +453,17 @@ class UserRepository {
       ),
       converter: (json) => User.fromJson(json),
     );
-    
+
     return handleApiResponse<User>(response);
   }
-  
+
   Future<void> updateProfile(UserUpdateRequest request) async {
     final response = await DioRequestHandler.put(
       'users/me',
       data: request.toJson(),
       requestOptions: RequestOptionsModel(hasBearerToken: true),
     );
-    
+
     await handleApiResponse(response);
   }
 }
@@ -432,10 +474,12 @@ class UserRepository {
 Common issues and solutions:
 
 1. **Authentication Issues**:
+
    - Ensure `hasBearerToken` is set correctly in `RequestOptionsModel`
    - Check if tokens are properly managed in `TokenManager`
 
 2. **Caching Problems**:
+
    - Verify `shouldCache` is enabled in request options
    - Check cache duration settings
    - Try clearing cache with `ApiClient.clearCache()`

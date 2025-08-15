@@ -1,3 +1,19 @@
+## [1.2.0] - 2024-08-15
+
+### Added
+- `RefreshTokenHandler` typedef and `RefreshTokenResponse` contract for consumer-provided refresh token logic
+- `TokenManager.setRefreshHandler(...)` API to register refresh token behavior
+- `hasAccessToken()` now performs automatic refresh when an expired token is detected
+- Single-flight refresh protection via internal `_refreshCompleter` to prevent concurrent refresh calls
+
+### Changed
+- `getAccessToken()` unified to use the configured refresh handler and to return `null` when no handler is provided
+- Token refresh flow updated to persist tokens returned by the handler via `setTokens()`
+
+### Fixed
+- Prevent unexpected exceptions when no refresh handler is configured (returns `false`/`null` instead of forcing refresh)
+- Fixed race conditions during concurrent refresh attempts; refresh errors are now propagated to waiting callers
+
 ## [1.1.10] - 2024-03-21
 
 ### Fixed
@@ -91,8 +107,8 @@
 * Improved documentation and parameter naming for better clarity
 * Added predefined retry configurations for common use cases
 
-## [1.1.1
-]
+## [1.1.1]
+
 * Improved network connectivity handling:
   * Made connectivity checks less aggressive
   * Added multiple domain checks for better reliability

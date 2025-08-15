@@ -1,39 +1,78 @@
+import 'dart:async';
 import 'package:dio_flow/src/models/api_exception.dart';
+import 'package:dio_flow/src/models/response/refresh_token_response.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+typedef RefreshTokenHandler =
+    Future<RefreshTokenResponse> Function(String refreshToken);
 
 class TokenManager {
   static const String _accessTokenKey = 'access_token';
   static const String _refreshTokenKey = 'refresh_token';
   static const String _tokenExpiryKey = 'token_expiry';
-  
+
   static String? _accessToken;
   static String? _refreshToken;
   static DateTime? _tokenExpiry;
   static SharedPreferences? _prefs;
 
+  static RefreshTokenHandler? _refreshHandler;
+  static Completer<void>? _refreshCompleter;
+
   static Future<void> initialize() async {
     _prefs = await SharedPreferences.getInstance();
+
     await _loadTokens();
+  }
+
+  static void setRefreshHandler(RefreshTokenHandler handler) {
+    _refreshHandler = handler;
   }
 
   static Future<void> _loadTokens() async {
     if (_prefs == null) {
-      throw ApiException('TokenManager not initialized. Call initialize() first.');
+      throw ApiException(
+        'TokenManager not initialized. Call initialize() first.',
+      );
     }
 
     _accessToken = _prefs!.getString(_accessTokenKey);
     _refreshToken = _prefs!.getString(_refreshTokenKey);
-    
+
     final expiryTimestamp = _prefs!.getInt(_tokenExpiryKey);
     if (expiryTimestamp != null) {
       _tokenExpiry = DateTime.fromMillisecondsSinceEpoch(expiryTimestamp);
     }
   }
 
-  static Future<String?> getAccessToken() async {
-    if (_accessToken == null || _isTokenExpired()) {
+  static Future<bool> hasAccessToken() async {
+    // اگر اصلاً توکن وجود نداره
+    if (_accessToken == null) return false;
+
+    // اگر اکسپایر نشده
+    if (!_isTokenExpired()) return true;
+
+    // اگر اکسپایر شده، تلاش برای رفرش
+    if (_refreshHandler == null) return false;
+
+    try {
       await _refreshAccessToken();
+      return true;
+    } catch (_) {
+      return false;
     }
+  }
+
+  static Future<String?> getAccessToken() async {
+    if (_accessToken != null && !_isTokenExpired()) {
+      return _accessToken;
+    }
+
+    if (_refreshHandler == null) {
+      return null;
+    }
+
+    await _refreshAccessToken();
     return _accessToken;
   }
 
@@ -45,7 +84,40 @@ class TokenManager {
     if (_refreshToken == null) {
       throw ApiException('No refresh token available');
     }
-    // Implement token refresh logic using _refreshToken
+
+    if (_refreshHandler == null) {
+      throw ApiException(
+        'No refresh handler configured. Set a RefreshHandler before refreshing.',
+      );
+    }
+
+    if (_refreshCompleter != null) {
+      return _refreshCompleter!.future;
+    }
+
+    _refreshCompleter = Completer<void>();
+    try {
+      final RefreshTokenResponse res = await _refreshHandler!(_refreshToken!);
+
+      if (res.accessToken.isEmpty || res.refreshToken.isEmpty) {
+        throw ApiException('Refresh handler returned invalid tokens');
+      }
+
+      await setTokens(
+        accessToken: res.accessToken,
+        refreshToken: res.refreshToken,
+        expiry: res.expiry,
+      );
+
+      _refreshCompleter!.complete();
+    } catch (e) {
+      if (!_refreshCompleter!.isCompleted) {
+        _refreshCompleter!.completeError(e);
+      }
+      rethrow;
+    } finally {
+      _refreshCompleter = null;
+    }
   }
 
   static Future<void> setTokens({
@@ -54,7 +126,9 @@ class TokenManager {
     required DateTime expiry,
   }) async {
     if (_prefs == null) {
-      throw ApiException('TokenManager not initialized. Call initialize() first.');
+      throw ApiException(
+        'TokenManager not initialized. Call initialize() first.',
+      );
     }
 
     await Future.wait([
@@ -70,7 +144,9 @@ class TokenManager {
 
   static Future<void> clearTokens() async {
     if (_prefs == null) {
-      throw ApiException('TokenManager not initialized. Call initialize() first.');
+      throw ApiException(
+        'TokenManager not initialized. Call initialize() first.',
+      );
     }
 
     await Future.wait([
