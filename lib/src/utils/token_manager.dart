@@ -46,13 +46,10 @@ class TokenManager {
   }
 
   static Future<bool> hasAccessToken() async {
-    // اگر اصلاً توکن وجود نداره
     if (_accessToken == null) return false;
 
-    // اگر اکسپایر نشده
     if (!_isTokenExpired()) return true;
 
-    // اگر اکسپایر شده، تلاش برای رفرش
     if (_refreshHandler == null) return false;
 
     try {
