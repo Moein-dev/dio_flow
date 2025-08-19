@@ -42,7 +42,7 @@ Add to your pubspec.yaml:
 
 ```yaml
 dependencies:
-  dio_flow: ^1.1.7
+  dio_flow: ^1.2.0
 ```
 
 ## 🚀 Getting Started
