@@ -171,10 +171,10 @@ packages:
     dependency: transitive
     description:
       name: log_curl_request
-      sha256: "91b30f61a579085639c412e4158b284e9178242c2f1d228e8cafdfb7a519f632"
+      sha256: bd7fdcd510751c74718b05e8f2d60aa4436df4926e606831b2e3f590cf7ec05d
       url: "https://pub.dev"
     source: hosted
-    version: "0.0.5"
+    version: "0.1.0"
   matcher:
     dependency: transitive
     description:

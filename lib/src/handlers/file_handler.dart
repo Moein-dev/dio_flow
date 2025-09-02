@@ -1,10 +1,14 @@
-import 'dart:io';
 import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:dio_flow/src/handlers/dio_request_handler.dart';
 import 'package:dio_flow/src/models/request_options_model.dart';
 import 'package:dio_flow/src/models/response/response_model.dart';
 import 'package:dio_flow/src/models/response/error_type.dart';
+
+// Conditional imports for platform-specific implementations
+import 'file_handler_io.dart'
+    if (dart.library.html) 'file_handler_web.dart'
+    as platform;
 
 /// Callback function for tracking upload/download progress.
 ///
@@ -38,7 +42,7 @@ class FileHandler {
   ///
   /// Parameters:
   ///   endpoint - The API endpoint for file upload
-  ///   file - The file to upload
+  ///   file - The file to upload (File object on mobile/desktop, not supported on web)
   ///   fieldName - The form field name for the file (defaults to 'file')
   ///   additionalData - Additional form data to send with the file
   ///   requestOptions - Request configuration options
@@ -47,8 +51,11 @@ class FileHandler {
   /// Returns:
   ///   A ResponseModel containing the upload result
   ///
+  /// Note: On web platform, use uploadBytes instead as File objects are not available.
+  ///
   /// Example:
   /// ```dart
+  /// // Mobile/Desktop
   /// final file = File('/path/to/image.jpg');
   /// final response = await FileHandler.uploadFile(
   ///   'upload',
@@ -58,7 +65,7 @@ class FileHandler {
   /// ```
   static Future<ResponseModel> uploadFile(
     dynamic endpoint,
-    File file, {
+    dynamic file, {
     String fieldName = 'file',
     Map<String, dynamic>? additionalData,
     RequestOptionsModel requestOptions = const RequestOptionsModel(
@@ -66,56 +73,32 @@ class FileHandler {
     ),
     ProgressCallback? onProgress,
   }) async {
-    try {
-      // Create multipart file
-      final multipartFile = await MultipartFile.fromFile(
-        file.path,
-        filename: file.path.split('/').last,
-      );
-
-      // Create form data
-      final formData = FormData();
-      formData.files.add(MapEntry(fieldName, multipartFile));
-
-      // Add additional data if provided
-      if (additionalData != null) {
-        additionalData.forEach((key, value) {
-          formData.fields.add(MapEntry(key, value.toString()));
-        });
-      }
-
-      // Note: Progress tracking would need to be implemented at the Dio interceptor level
-      // For now, we'll use the standard request handler
-      return await DioRequestHandler.post(
-        endpoint,
-        data: formData,
-        requestOptions: requestOptions,
-      );
-    } catch (e) {
-      return FailedResponseModel(
-        statusCode: 500,
-        message: 'File upload failed: $e',
-        logCurl: 'FILE UPLOAD ERROR',
-        errorType: ErrorType.unknown,
-        error: e,
-      );
-    }
+    return platform.FileHandlerImpl.uploadFile(
+      endpoint,
+      file,
+      fieldName: fieldName,
+      additionalData: additionalData,
+      requestOptions: requestOptions,
+      onProgress: onProgress,
+    );
   }
 
   /// Uploads multiple files to the specified endpoint.
   ///
   /// Parameters:
   ///   endpoint - The API endpoint for file upload
-  ///   files - Map of field names to files
+  ///   files - Map of field names to files (not supported on web)
   ///   additionalData - Additional form data to send with the files
   ///   requestOptions - Request configuration options
   ///   onProgress - Callback for tracking upload progress (currently not implemented)
   ///
   /// Returns:
   ///   A ResponseModel containing the upload result
+  ///
+  /// Note: On web platform, use uploadBytes for each file instead.
   static Future<ResponseModel> uploadMultipleFiles(
     dynamic endpoint,
-    Map<String, File> files, {
+    Map<String, dynamic> files, {
     Map<String, dynamic>? additionalData,
     RequestOptionsModel requestOptions = const RequestOptionsModel(
       hasBearerToken: true,
@@ -125,13 +108,26 @@ class FileHandler {
     try {
       final formData = FormData();
 
-      // Add files
+      // Add files - this will work differently on web vs mobile/desktop
       for (final entry in files.entries) {
-        final multipartFile = await MultipartFile.fromFile(
-          entry.value.path,
-          filename: entry.value.path.split('/').last,
-        );
-        formData.files.add(MapEntry(entry.key, multipartFile));
+        if (entry.value is Uint8List) {
+          // Handle bytes (web-compatible)
+          final multipartFile = MultipartFile.fromBytes(
+            entry.value as Uint8List,
+            filename: entry.key,
+          );
+          formData.files.add(MapEntry(entry.key, multipartFile));
+        } else {
+          // Handle File objects (mobile/desktop only)
+          return FailedResponseModel(
+            statusCode: 500,
+            message:
+                'File objects not supported on web. Use Uint8List instead.',
+            logCurl: 'MULTIPLE FILE UPLOAD ERROR',
+            errorType: ErrorType.unknown,
+            error: UnsupportedError('File objects not supported on web'),
+          );
+        }
       }
 
       // Add additional data if provided
@@ -216,7 +212,7 @@ class FileHandler {
   ///
   /// Parameters:
   ///   endpoint - The API endpoint for file download
-  ///   savePath - The local path where the file should be saved
+  ///   savePath - The local path where the file should be saved (not supported on web)
   ///   parameters - Optional query parameters
   ///   requestOptions - Request configuration options
   ///   onProgress - Callback for tracking download progress (currently not implemented)
@@ -224,8 +220,11 @@ class FileHandler {
   /// Returns:
   ///   A ResponseModel containing the download result
   ///
+  /// Note: On web platform, use downloadBytes instead as files cannot be saved directly to disk.
+  ///
   /// Example:
   /// ```dart
+  /// // Mobile/Desktop
   /// final response = await FileHandler.downloadFile(
   ///   'files/123/download',
   ///   '/path/to/save/file.pdf',
@@ -240,42 +239,13 @@ class FileHandler {
     ),
     ProgressCallback? onProgress,
   }) async {
-    try {
-      // Create options for file download
-      final options = requestOptions.copyWith(responseType: ResponseType.bytes);
-
-      final response = await DioRequestHandler.get(
-        endpoint,
-        parameters: parameters,
-        requestOptions: options,
-      );
-
-      if (response.isSuccess) {
-        // Save the file
-        final file = File(savePath);
-        await file.writeAsBytes(response.data as List<int>);
-
-        return SuccessResponseModel(
-          data: {
-            'filePath': savePath,
-            'fileSize': (response.data as List<int>).length,
-          },
-          statusCode: response.statusCode,
-          message: 'File downloaded successfully',
-          logCurl: response.logCurl,
-        );
-      }
-
-      return response;
-    } catch (e) {
-      return FailedResponseModel(
-        statusCode: 500,
-        message: 'File download failed: $e',
-        logCurl: 'FILE DOWNLOAD ERROR',
-        errorType: ErrorType.unknown,
-        error: e,
-      );
-    }
+    return platform.FileHandlerImpl.downloadFile(
+      endpoint,
+      savePath,
+      parameters: parameters,
+      requestOptions: requestOptions,
+      onProgress: onProgress,
+    );
   }
 
   /// Downloads a file and returns it as bytes without saving to disk.

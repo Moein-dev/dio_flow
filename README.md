@@ -1,59 +1,140 @@
 # 🌊 Dio Flow
 
-[![pub package](https://img.shields.io/pub/v/dio_flow.svg)](https://pub.dev/packages/dio_flow)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Flutter](https://img.shields.io/badge/Flutter-3.7.0+-02569B?logo=flutter)](https://flutter.dev)
+[![pub package](https://img.shields.io/pub/v/dio_flow.svg?style=for-the-badge&logo=dart&logoColor=white)](https://pub.dev/packages/dio_flow)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
+[![Flutter](https://img.shields.io/badge/Flutter-3.7.0+-02569B?style=for-the-badge&logo=flutter&logoColor=white)](https://flutter.dev)
+[![Platform](https://img.shields.io/badge/Platform-iOS%20%7C%20Android%20%7C%20Web%20%7C%20Windows%20%7C%20macOS%20%7C%20Linux-lightgrey?style=for-the-badge)](https://flutter.dev/multi-platform)
 
-A powerful Flutter package that enhances Dio HTTP client with built-in support for caching, authentication, pagination, error handling, and standardized JSON utilities. Built for modern Flutter applications that need robust API integration.
+A powerful, production-ready Flutter package that supercharges Dio HTTP client
+
+Built for modern Flutter applications that demand robust, scalable API integration
+
+[📖 Documentation](#-table-of-contents) • [🚀 Quick Start](#-getting-started) • [💡 Examples](example/) • [🐛 Issues](https://github.com/Moein-dev/dio_flow/issues)
+
+---
+
+## 🎯 Why Dio Flow?
+
+Dio Flow transforms your API integration experience by providing enterprise-grade features out of the box:
+
+- **🔥 Zero Configuration**: Get started in minutes with sensible defaults
+- **🛡️ Production Ready**: Battle-tested with comprehensive error handling
+- **🚀 Performance First**: Built-in caching, retry logic, and request optimization
+- **🌐 Universal**: Works seamlessly across all Flutter platforms
+- **🧪 Developer Friendly**: Extensive mocking support for testing
+- **📊 Observable**: Built-in metrics and detailed logging
 
 ## 📋 Table of Contents
 
-- [Features](#-features)
-- [Installation](#-installation)
-- [Getting Started](#-getting-started)
-- [Core Components](#-core-components)
-- [Authentication](#-authentication)
-- [Endpoint Configuration](#-endpoint-configuration)
-- [Advanced Features](#-advanced-features)
-- [Best Practices](#️-best-practices)
-- [Mock Support](#-mock-support)
-- [GraphQL Support](#-graphql-support)
-- [File Operations](#-file-operations)
-- [Troubleshooting](#-troubleshooting)
-- [Contributing](#-contributing)
-- [License](#-license)
+- [🎯 Why Dio Flow?](#-why-dio-flow)
+- [✨ Features](#-features)
+- [🎯 Platform Support](#-platform-support)
+- [📦 Installation](#-installation)
+- [🚀 Getting Started](#-getting-started)
+- [🎯 Core Components](#-core-components)
+- [� Authentication](#-authentication)
+- [🌐 Endpoint Configuration](#-endpoint-configuration)
+- [🔄 Advanced Features](#-advanced-features)
+- [�️ uBest Practices](#️-best-practices)
+- [🧪 Mock Support](#-mock-support)
+- [� GraphQL Support](#-graphql-support)
+- [� FBile Operations](#-file-operations)
+- [🔍 Troubleshooting](#-troubleshooting)
+- [🤝 Contributing](#-contributing)
+- [� LicenseOse](#-license)
 
 ## ✨ Features
 
-- **🚀 Modern HTTP Client**: Built on top of Dio with enhanced features
-- **🔄 Smart Response Handling**: Automatic conversion of responses to strongly-typed models
-- **💾 Intelligent Caching**: Built-in response caching with configurable TTL
-- **🔑 Token Management**: Robust authentication with token refresh support
-- **🔁 Auto-Retry**: Configurable retry logic for failed requests
-- **⚡ Rate Limiting**: Prevent API throttling with built-in rate limiting
-- **📶 Network Awareness**: Automatic handling of connectivity changes
-- **📊 Request Metrics**: Built-in performance tracking
+| 🚀 **Core**             | 🔒 **Security**        | 🛠️ **Developer Experience** |
+| ----------------------- | ---------------------- | --------------------------- |
+| Modern HTTP Client      | Token Management       | Type-Safe Responses         |
+| Smart Response Handling | Auto Token Refresh     | Comprehensive Testing       |
+| Intelligent Caching     | Request Authentication | Built-in Mocking            |
+| Auto-Retry Logic        | Secure Token Storage   | Detailed Logging            |
+
+| 🌐 **Platform**   | 📊 **Performance** | 🔧 **Advanced**  |
+| ----------------- | ------------------ | ---------------- |
+| Universal Support | Request Metrics    | GraphQL Support  |
+| Web Compatible    | Rate Limiting      | File Operations  |
+| Cross-Platform    | Network Awareness  | Pagination Utils |
+| WASM Ready        | Connection Pooling | JSON Utilities   |
+
+### 🎯 Key Capabilities
+
+- **🚀 Modern HTTP Client**: Enhanced Dio with production-grade features
+- **🔄 Smart Response Handling**: Automatic conversion to strongly-typed models
+- **💾 Intelligent Caching**: Configurable TTL with automatic invalidation
+- **🔑 Token Management**: Robust authentication with automatic refresh
+- **🔁 Auto-Retry**: Configurable retry logic with exponential backoff
+- **⚡ Rate Limiting**: Built-in throttling to prevent API abuse
+- **📶 Network Awareness**: Automatic connectivity change handling
+- **📊 Request Metrics**: Built-in performance tracking and analytics
 - **🔍 Detailed Logging**: Complete request/response logging with cURL commands
-- **📄 Pagination Support**: Built-in utilities for handling paginated responses
-- **🛡️ Type Safety**: Strong typing throughout the library
-- **🎯 Error Handling**: Comprehensive error handling with typed error responses
-- **🧪 Mock Support**: Built-in mocking for testing without real HTTP calls
-- **🔗 GraphQL Support**: Native GraphQL query, mutation, and subscription support
+- **📄 Pagination Support**: Utilities for handling paginated API responses
+- **🛡️ Type Safety**: Strong typing throughout the entire library
+- **🎯 Error Handling**: Comprehensive error handling with typed responses
+- **🧪 Mock Support**: Built-in mocking system for testing without real HTTP calls
+- **🔗 GraphQL Support**: Native GraphQL queries, mutations, and subscriptions
 - **📁 File Operations**: Easy file upload/download with progress tracking
 - **🔧 Extensible Architecture**: Plugin-based design for custom functionality
 
+## 🎯 Platform Support
+
+### 🌐 Universal Flutter Support - Write Once, Run Everywhere
+
+| Platform       | Support | File Operations | Network Checking | WASM Compatible |
+| -------------- | ------- | --------------- | ---------------- | --------------- |
+| 📱 **iOS**     | ✅ Full | ✅ Complete     | ✅ Native        | ✅ Ready        |
+| 🤖 **Android** | ✅ Full | ✅ Complete     | ✅ Native        | ✅ Ready        |
+| 🌐 **Web**     | ✅ Full | 🔄 Bytes Only\* | ✅ HTTP-based    | ✅ Compatible   |
+| 🪟 **Windows** | ✅ Full | ✅ Complete     | ✅ Native        | ✅ Ready        |
+| 🍎 **macOS**   | ✅ Full | ✅ Complete     | ✅ Native        | ✅ Ready        |
+| 🐧 **Linux**   | ✅ Full | ✅ Complete     | ✅ Native        | ✅ Ready        |
+
+> **💡 Web Platform Note**: File operations use `Uint8List` instead of `File` objects due to browser security restrictions. This ensures maximum compatibility while maintaining functionality.
+
 ## 📦 Installation
 
-Add to your pubspec.yaml:
+### Get started in seconds with a single dependency
+
+### 📋 Add Dependency
 
 ```yaml
 dependencies:
-  dio_flow: ^1.3.0
+  dio_flow: ^1.3.1
+```
+
+### 🔄 Install
+
+```bash
+flutter pub get
+```
+
+### 📱 Import
+
+```dart
+import 'package:dio_flow/dio_flow.dart';
+```
+
+#### 📦 Development Dependencies (Optional)
+
+For enhanced development experience:
+
+```yaml
+dev_dependencies:
+  dio_flow: ^1.3.1
+  # For testing with mocks
+  mockito: ^5.4.0
+  # For integration testing
+  integration_test:
+    sdk: flutter
 ```
 
 ## 🚀 Getting Started
 
-### Basic Setup
+### ⚡ From zero to API calls in under 2 minutes
+
+### 🎯 Quick Setup
 
 ```dart
 import 'package:dio_flow/dio_flow.dart';
@@ -61,7 +142,7 @@ import 'package:dio_flow/dio_flow.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 1. Configure the client
+  // 🔧 Configure Dio Flow
   DioFlowConfig.initialize(
     baseUrl: 'https://api.example.com',
     connectTimeout: const Duration(seconds: 30),
@@ -69,7 +150,59 @@ void main() async {
     sendTimeout: const Duration(seconds: 30),
   );
 
-  // 2. Initialize the client
+  // 🚀 Initialize the client
+  await ApiClient.initialize();
+
+  runApp(MyApp());
+}
+```
+
+### 🎯 Your First API Call
+
+```dart
+// 📡 Make your first request
+final response = await DioRequestHandler.get('users');
+
+if (response.isSuccess) {
+  print('✅ Success: ${response.data}');
+} else {
+  print('❌ Error: ${response.error?.message}');
+}
+```
+
+### 🔧 Advanced Configuration
+
+```dart
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // 🔧 Advanced configuration
+  DioFlowConfig.initialize(
+    baseUrl: 'https://api.example.com',
+    connectTimeout: const Duration(seconds: 30),
+    receiveTimeout: const Duration(seconds: 30),
+    sendTimeout: const Duration(seconds: 30),
+
+    // 🔍 Enable detailed logging
+    debugMode: true,
+
+    // 🔒 Security headers
+    defaultHeaders: {
+      'User-Agent': 'MyApp/1.0.0',
+      'Accept': 'application/json',
+    },
+
+    // 🔄 Retry configuration
+    retryOptions: RetryOptions(
+      maxAttempts: 3,
+      retryInterval: const Duration(seconds: 2),
+    ),
+  );
+
+  // 🔑 Initialize token management
+  await TokenManager.initialize();
+
+  // 🚀 Initialize API client
   await ApiClient.initialize();
 
   runApp(MyApp());
@@ -148,7 +281,9 @@ The package includes several built-in interceptors:
 
 ## 🔑 Authentication
 
-The package provides robust token management with persistent storage:
+### 🛡️ Enterprise-grade authentication with automatic token management
+
+Dio Flow provides a comprehensive authentication system with persistent storage, automatic token refresh, and seamless integration:
 
 ```dart
 // Initialize token manager (call this in your main.dart)
@@ -363,48 +498,52 @@ final response = await DioRequestHandler.get<PaginatedResponse<User>>(
 
 ## 🛠️ Best Practices
 
-1. **Initialize Early**:
+### 💡 Production-tested patterns for robust API integration
 
-   ```dart
-   void main() async {
-     await ApiClient.initialize();
-     // ... rest of your app initialization
-   }
-   ```
+### 🚀 Essential Patterns
 
-2. **Handle Errors Consistently**:
+#### 1. **Initialize Early**
 
-   ```dart
-   try {
-     final response = await DioRequestHandler.get('endpoint');
-     if (response.isSuccess) {
-       // Handle success
-     } else {
-       // Use the typed error handling
-       handleError(response.error);
-     }
-   } catch (e) {
-     // Handle unexpected errors
-   }
-   ```
+```dart
+void main() async {
+  await ApiClient.initialize();
+  // ... rest of your app initialization
+}
+```
 
-3. **Use Type-Safe Responses**:
+#### 2. **Handle Errors Consistently**
 
-   ```dart
-   class UserResponse {
-     final String id;
-     final String name;
+```dart
+try {
+  final response = await DioRequestHandler.get('endpoint');
+  if (response is SuccessResponseModel) {
+    // Handle success
+  } else {
+    // Use the typed error handling
+    handleError(response.error);
+  }
+} catch (e) {
+  // Handle unexpected errors
+}
+```
 
-     UserResponse.fromJson(Map<String, dynamic> json)
-         : id = json['id'],
-           name = json['name'];
-   }
+#### 3. **Use Type-Safe Responses**
 
-   final response = await DioRequestHandler.get<UserResponse>(
-     'users/me',
-     converter: (json) => UserResponse.fromJson(json),
-   );
-   ```
+```dart
+class UserResponse {
+  final String id;
+  final String name;
+
+  UserResponse.fromJson(Map<String, dynamic> json)
+      : id = json['id'],
+        name = json['name'];
+}
+
+final response = await DioRequestHandler.get<UserResponse>(
+  'users/me',
+  converter: (json) => UserResponse.fromJson(json),
+);
+```
 
 ### Error Handling Patterns
 
@@ -445,7 +584,7 @@ try {
 }
 ```
 
-### Repository Pattern
+### 🏗️ Repository Pattern
 
 ```dart
 class UserRepository {
@@ -475,9 +614,54 @@ class UserRepository {
 }
 ```
 
+### ⚡ Performance Tips
+
+#### 🚀 Optimization strategies for production apps
+
+```dart
+// 💾 Use caching strategically
+final response = await DioRequestHandler.get(
+  'static-data',
+  requestOptions: RequestOptionsModel(
+    shouldCache: true,
+    cacheMaxAge: const Duration(hours: 1), // Cache static data longer
+  ),
+);
+
+// 🔄 Batch requests when possible
+final futures = [
+  DioRequestHandler.get('users'),
+  DioRequestHandler.get('posts'),
+  DioRequestHandler.get('comments'),
+];
+final responses = await Future.wait(futures);
+
+// ⚡ Use pagination for large datasets
+final paginatedResponse = await PaginationUtils.fetchAllPages(
+  'large-dataset',
+  parameters: {'per_page': 50}, // Optimal page size
+  maxPages: 10, // Limit to prevent memory issues
+);
+
+// 🎯 Optimize file uploads
+final uploadResponse = await FileHandler.uploadBytes(
+  'upload',
+  compressedBytes, // Compress before upload
+  'file.jpg',
+  onProgress: (sent, total) {
+    // Update UI efficiently
+    if (sent % 1024 == 0) { // Update every KB
+      updateProgressUI(sent / total);
+    }
+  },
+);
+```
+
 ## 🧪 Mock Support
 
-DioFlow includes powerful mocking capabilities for testing:
+### 🎭 Powerful mocking system for comprehensive testing
+
+Dio Flow includes a sophisticated mocking system that makes testing your API integrations effortless:
 
 ```dart
 void main() {
@@ -509,7 +693,9 @@ void main() {
 
 ## 🔗 GraphQL Support
 
-Native GraphQL support with query builder:
+### ⚡ Native GraphQL integration with powerful query building
+
+Dio Flow provides first-class GraphQL support with an intuitive query builder and comprehensive operation handling:
 
 ```dart
 // Simple query
@@ -550,10 +736,14 @@ final batchResponse = await GraphQLHandler.batch(operations);
 
 ## 📁 File Operations
 
-Easy file upload and download with progress tracking:
+### 📤📥 Seamless file handling across all platforms with progress tracking
+
+Dio Flow provides comprehensive file operations that work consistently across all Flutter platforms, with intelligent platform-specific optimizations:
+
+### Mobile/Desktop Platforms (iOS, Android, Windows, macOS, Linux)
 
 ```dart
-// File upload
+// File upload from File object
 final file = File('/path/to/file.jpg');
 final uploadResponse = await FileHandler.uploadFile(
   'upload',
@@ -565,17 +755,7 @@ final uploadResponse = await FileHandler.uploadFile(
   },
 );
 
-// Multiple file upload
-final files = {
-  'document': File('/path/to/doc.pdf'),
-  'image': File('/path/to/image.jpg'),
-};
-final multiUploadResponse = await FileHandler.uploadMultipleFiles(
-  'upload-multiple',
-  files,
-);
-
-// File download
+// File download to disk
 final downloadResponse = await FileHandler.downloadFile(
   'files/123/download',
   '/local/path/file.pdf',
@@ -583,15 +763,42 @@ final downloadResponse = await FileHandler.downloadFile(
     print('Download: ${(received/total*100).toStringAsFixed(1)}%');
   },
 );
+```
 
-// Download as bytes
+### Web Platform
+
+```dart
+// Upload from bytes (web-compatible)
+final bytesUploadResponse = await FileHandler.uploadBytes(
+  'upload',
+  fileBytes, // Uint8List
+  'filename.jpg',
+  fieldName: 'avatar',
+  additionalData: {'userId': '123'},
+);
+
+// Download as bytes (web-compatible)
 final bytesResponse = await FileHandler.downloadBytes('files/123');
 if (bytesResponse.isSuccess) {
   final bytes = bytesResponse.data['bytes'] as Uint8List;
-  // Use bytes...
+  // Use bytes for web download (e.g., trigger browser download)
 }
+```
 
-// Upload from bytes
+### Cross-Platform File Operations
+
+```dart
+// Multiple file upload (use bytes for web compatibility)
+final files = {
+  'document': documentBytes, // Uint8List for web
+  'image': imageBytes,       // Uint8List for web
+};
+final multiUploadResponse = await FileHandler.uploadMultipleFiles(
+  'upload-multiple',
+  files,
+);
+
+// Upload from bytes (works on all platforms)
 final bytesUploadResponse = await FileHandler.uploadBytes(
   'upload',
   fileBytes,
@@ -599,9 +806,13 @@ final bytesUploadResponse = await FileHandler.uploadBytes(
 );
 ```
 
+> **Note**: On web platform, direct file system access is restricted by browser security. Use `FileHandler.uploadBytes()` and `FileHandler.downloadBytes()` for web-compatible file operations.
+
 ## 🔍 Troubleshooting
 
-Common issues and solutions:
+### 🛠️ Quick solutions to common issues
+
+### 🚨 Common Issues & Solutions
 
 1. **Authentication Issues**:
 
@@ -637,7 +848,7 @@ Common issues and solutions:
    - Check server file size limits
    - Ensure correct Content-Type headers for multipart uploads
 
-### Debug Mode
+### 🔍 Debug Mode
 
 ```dart
 // Enable detailed logging
@@ -655,10 +866,131 @@ final response = await DioRequestHandler.get(
 );
 ```
 
+---
+
+## 📚 Quick Reference
+
+### ⚡ Common operations at a glance
+
+#### 🔗 API Calls Cheat Sheet
+
+```dart
+// GET request
+final users = await DioRequestHandler.get('users');
+
+// POST with data
+final created = await DioRequestHandler.post('users', data: userData);
+
+// PUT update
+final updated = await DioRequestHandler.put('users/123', data: updates);
+
+// DELETE
+final deleted = await DioRequestHandler.delete('users/123');
+
+// With authentication
+final profile = await DioRequestHandler.get(
+  'profile',
+  requestOptions: RequestOptionsModel(hasBearerToken: true),
+);
+
+// With caching
+final cached = await DioRequestHandler.get(
+  'static-data',
+  requestOptions: RequestOptionsModel(
+    shouldCache: true,
+    cacheMaxAge: Duration(minutes: 30),
+  ),
+);
+```
+
+#### 🔑 Authentication Cheat Sheet
+
+```dart
+// Set tokens
+await TokenManager.setTokens(
+  accessToken: 'access_token',
+  refreshToken: 'refresh_token',
+  expiry: DateTime.now().add(Duration(hours: 1)),
+);
+
+// Check if authenticated
+final isAuthenticated = await TokenManager.hasAccessToken();
+
+// Get current token (auto-refreshes if needed)
+final token = await TokenManager.getAccessToken();
+
+// Clear tokens (logout)
+await TokenManager.clearTokens();
+```
+
+#### 📁 File Operations Cheat Sheet
+
+```dart
+// Upload file (mobile/desktop)
+final upload = await FileHandler.uploadFile('upload', file);
+
+// Upload bytes (all platforms)
+final upload = await FileHandler.uploadBytes('upload', bytes, 'file.jpg');
+
+// Download file (mobile/desktop)
+final download = await FileHandler.downloadFile('files/123', '/path/file.pdf');
+
+// Download bytes (all platforms)
+final download = await FileHandler.downloadBytes('files/123');
+```
+
+#### 🧪 Testing Cheat Sheet
+
+```dart
+// Enable mocking
+MockDioFlow.enableMockMode();
+
+// Mock success response
+MockDioFlow.mockResponse('users', MockResponse.success([...]));
+
+// Mock error response
+MockDioFlow.mockResponse('users', MockResponse.failure('Error message'));
+
+// Mock network error
+MockDioFlow.mockResponse('users', MockResponse.networkError());
+
+// Disable mocking
+MockDioFlow.disableMockMode();
+```
+
+---
+
 ## 🤝 Contributing
 
-Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
+### We love contributions! Help make Dio Flow even better 💪
+
+Contributions are welcome! Whether it's:
+
+- 🐛 **Bug Reports**: Found an issue? Let us know!
+- ✨ **Feature Requests**: Have an idea? We'd love to hear it!
+- 📖 **Documentation**: Help improve our docs
+- 🔧 **Code Contributions**: Submit a PR!
+
+Please read our [Contributing Guide](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
+
+### 🌟 Contributors
+
+Thanks to all our amazing contributors who help make Dio Flow better!
+
+---
 
 ## 📄 License
 
+### 📜 MIT License - Free for everyone, everywhere
+
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+Made with ❤️ by the Flutter community
+
+---
+
+### 🌟 Star us on GitHub if Dio Flow helped you
+
+[![GitHub stars](https://img.shields.io/github/stars/Moein-dev/dio_flow?style=social)](https://github.com/Moein-dev/dio_flow)
+
+Happy coding! 🚀
