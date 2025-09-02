@@ -295,10 +295,9 @@ void main() async {
   // automatic refresh will be disabled and TokenManager will return null on expired token.
     TokenManager.setRefreshHandler((refreshToken) async {
     // Use DioRequestHandler to call refresh endpoint (consumer controls endpoint details).
-    final refreshResp = await DioRequestHandler.post<Map<String, dynamic>>(
+    final refreshResp = await DioRequestHandler.post(
       'auth/refresh',
       data: {'refresh_token': refreshToken},
-      requestOptions: RequestOptionsModel(hasBearerToken: false),
     );
 
     if (refreshResp is! SuccessResponseModel) {

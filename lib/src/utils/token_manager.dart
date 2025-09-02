@@ -53,7 +53,7 @@ class TokenManager {
     if (_refreshHandler == null) return false;
 
     try {
-      await _refreshAccessToken();
+      await refreshAccessToken();
       return true;
     } catch (_) {
       return false;
@@ -69,7 +69,7 @@ class TokenManager {
       return null;
     }
 
-    await _refreshAccessToken();
+    await refreshAccessToken();
     return _accessToken;
   }
 
@@ -77,7 +77,7 @@ class TokenManager {
     return _tokenExpiry?.isBefore(DateTime.now()) ?? true;
   }
 
-  static Future<void> _refreshAccessToken() async {
+  static Future<void> refreshAccessToken() async {
     if (_refreshToken == null) {
       throw ApiException('No refresh token available');
     }

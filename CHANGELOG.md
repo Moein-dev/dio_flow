@@ -5,11 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.3.2] - 2024-12-19
+## [1.3.3] - 2025-09-02
+
+### 🔧 Bug Fixes
+
+- Optimize inputs for authentication: Remove `requiresAuth` ... if token is required: `hasBearerToken = true`
+- Add a token refresh method when receiving a 401 error: Automatic update if a `RefreshTokenHandler` is available
+- Improved logs
+
+## [1.3.2] - 2025-09-02
 
 - Updated README.md
 
-## [1.3.1] - 2024-12-19
+## [1.3.1] - 2025-09-02
 
 ### 🌐 Web Platform Support
 
@@ -33,7 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added web-specific examples for file operations
 - Documented platform differences and limitations
 
-## [1.3.0] - 2024-12-19
+## [1.3.0] - 2025-09-02
 
 ### 🚀 Major Features Added
 
@@ -108,7 +116,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Extensible Architecture**: Easy to add custom functionality
 - **Production Ready**: Battle-tested with comprehensive error handling
 
-## [1.2.0] - 2024-08-15
+## [1.2.0] - 2025-08-15
 
 ### Added in 1.2.0
 

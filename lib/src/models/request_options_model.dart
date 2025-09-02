@@ -6,7 +6,6 @@ import 'package:dio_flow/src/models/retry_options.dart';
 /// This class provides a way to customize how requests are made, including
 /// authentication, caching, retries, and other Dio-specific options.
 class RequestOptionsModel {
-  /// Whether to include bearer token authentication header.
   final bool hasBearerToken;
 
   /// Whether to cache the response.
@@ -42,9 +41,6 @@ class RequestOptionsModel {
   /// Whether to use persistent connection.
   final bool? persistentConnection;
 
-  /// Whether this request requires authentication.
-  final bool requiresAuth;
-
   /// Number of times to retry the request on failure.
   final int retryCount;
 
@@ -61,7 +57,7 @@ class RequestOptionsModel {
   /// - [retryCount] defaults to 3
   /// - [retryInterval] defaults to 1 second
   const RequestOptionsModel({
-    this.hasBearerToken = true,
+    this.hasBearerToken = false,
     this.shouldCache = false,
     this.cacheDuration = const Duration(minutes: 5),
     this.retryOptions,
@@ -73,7 +69,6 @@ class RequestOptionsModel {
     this.followRedirects,
     this.maxRedirects,
     this.persistentConnection,
-    this.requiresAuth = true,
     this.retryCount = 3,
     this.retryInterval = const Duration(seconds: 1),
   });
@@ -92,12 +87,10 @@ class RequestOptionsModel {
     bool? followRedirects,
     int? maxRedirects,
     bool? persistentConnection,
-    bool? requiresAuth,
     int? retryCount,
     Duration? retryInterval,
   }) {
     return RequestOptionsModel(
-      hasBearerToken: hasBearerToken ?? this.hasBearerToken,
       shouldCache: shouldCache ?? this.shouldCache,
       cacheDuration: cacheDuration ?? this.cacheDuration,
       retryOptions: retryOptions ?? this.retryOptions,
@@ -110,7 +103,6 @@ class RequestOptionsModel {
       followRedirects: followRedirects ?? this.followRedirects,
       maxRedirects: maxRedirects ?? this.maxRedirects,
       persistentConnection: persistentConnection ?? this.persistentConnection,
-      requiresAuth: requiresAuth ?? this.requiresAuth,
       retryCount: retryCount ?? this.retryCount,
       retryInterval: retryInterval ?? this.retryInterval,
     );
@@ -135,7 +127,6 @@ class RequestOptionsModel {
       persistentConnection: persistentConnection,
       extra: {
         ...?extra,
-        'requiresAuth': requiresAuth,
         'retryCount': retryCount,
         'retryInterval': retryInterval,
       },
@@ -183,7 +174,6 @@ class RequestOptionsModel {
       maxRedirects: options.maxRedirects,
       persistentConnection: options.persistentConnection,
       extra: extra,
-      requiresAuth: extra['requiresAuth'] as bool? ?? true,
       retryCount: extra['retryCount'] as int? ?? 3,
       retryInterval:
           extra['retryInterval'] as Duration? ?? const Duration(seconds: 1),

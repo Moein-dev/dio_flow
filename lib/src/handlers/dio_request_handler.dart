@@ -97,7 +97,7 @@ class DioRequestHandler {
         fullUrl,
         parameters: parameters,
         data: data,
-        headers: headers,
+        headers: dioOptions.headers,
         showDebugPrint: false,
       );
 
@@ -360,9 +360,7 @@ class DioRequestHandler {
   static Future<ResponseModel> patch(
     dynamic endpoint, {
     Map<String, dynamic>? parameters,
-    RequestOptionsModel requestOptions = const RequestOptionsModel(
-      hasBearerToken: true,
-    ),
+    RequestOptionsModel requestOptions = const RequestOptionsModel(),
   }) async {
     return _executeRequest(
       endpoint,
@@ -385,9 +383,7 @@ class DioRequestHandler {
   static Future<ResponseModel> delete(
     dynamic endpoint, {
     Map<String, dynamic>? parameters,
-    RequestOptionsModel requestOptions = const RequestOptionsModel(
-      hasBearerToken: true,
-    ),
+    RequestOptionsModel requestOptions = const RequestOptionsModel(),
   }) async {
     return _executeRequest(
       endpoint,
@@ -407,21 +403,13 @@ class DioRequestHandler {
   static Future<Map<String, dynamic>> _header({
     bool hasBearerToken = false,
   }) async {
-    final Map<String, dynamic> headers = {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-    };
+    final Map<String, dynamic> headers = {};
 
     if (hasBearerToken) {
-      try {
-        final token = await TokenManager.getAccessToken();
+              final token = await TokenManager.getAccessToken();
         if (token != null && token.isNotEmpty) {
           headers['Authorization'] = 'Bearer $token';
         }
-      } catch (e) {
-        // If token retrieval fails, continue without authorization header
-        // The request will likely fail with 401, which can be handled by the caller
-      }
     }
 
     return headers;
