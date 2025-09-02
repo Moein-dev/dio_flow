@@ -105,7 +105,8 @@ class RequestOptionsModel {
       extra: extra ?? this.extra,
       responseType: responseType ?? this.responseType,
       validateStatus: validateStatus ?? this.validateStatus,
-      receiveDataWhenStatusError: receiveDataWhenStatusError ?? this.receiveDataWhenStatusError,
+      receiveDataWhenStatusError:
+          receiveDataWhenStatusError ?? this.receiveDataWhenStatusError,
       followRedirects: followRedirects ?? this.followRedirects,
       maxRedirects: maxRedirects ?? this.maxRedirects,
       persistentConnection: persistentConnection ?? this.persistentConnection,
@@ -165,4 +166,27 @@ class RequestOptionsModel {
   static const RequestOptionsModel authenticated = RequestOptionsModel(
     hasBearerToken: true,
   );
+
+  /// Creates a RequestOptionsModel from Dio Options.
+  ///
+  /// This factory constructor allows converting from Dio's Options
+  /// back to our RequestOptionsModel format.
+  factory RequestOptionsModel.fromDioOptions(Options options) {
+    final extra = options.extra ?? <String, dynamic>{};
+
+    return RequestOptionsModel(
+      headers: options.headers,
+      responseType: options.responseType,
+      validateStatus: options.validateStatus,
+      receiveDataWhenStatusError: options.receiveDataWhenStatusError,
+      followRedirects: options.followRedirects,
+      maxRedirects: options.maxRedirects,
+      persistentConnection: options.persistentConnection,
+      extra: extra,
+      requiresAuth: extra['requiresAuth'] as bool? ?? true,
+      retryCount: extra['retryCount'] as int? ?? 3,
+      retryInterval:
+          extra['retryInterval'] as Duration? ?? const Duration(seconds: 1),
+    );
+  }
 }

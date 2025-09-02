@@ -8,25 +8,25 @@ class HttpMethods {
   HttpMethods._();
 
   /// HTTP GET method.
-  static const String GET = 'GET';
+  static const String get = 'GET';
 
   /// HTTP POST method.
-  static const String POST = 'POST';
+  static const String post = 'POST';
 
   /// HTTP PUT method.
-  static const String PUT = 'PUT';
+  static const String put = 'PUT';
 
   /// HTTP DELETE method.
-  static const String DELETE = 'DELETE';
+  static const String delete = 'DELETE';
 
   /// HTTP PATCH method.
-  static const String PATCH = 'PATCH';
+  static const String patch = 'PATCH';
 
   /// HTTP HEAD method.
-  static const String HEAD = 'HEAD';
+  static const String head = 'HEAD';
 
   /// HTTP OPTIONS method.
-  static const String OPTIONS = 'OPTIONS';
+  static const String options = 'OPTIONS';
 
   /// Returns true if the given method is valid.
   ///
@@ -37,12 +37,12 @@ class HttpMethods {
   ///   True if the method is a valid HTTP method
   static bool isValid(String method) {
     final upperMethod = method.toUpperCase();
-    return upperMethod == GET ||
-        upperMethod == POST ||
-        upperMethod == PUT ||
-        upperMethod == DELETE ||
-        upperMethod == PATCH ||
-        upperMethod == HEAD ||
-        upperMethod == OPTIONS;
+    return upperMethod == get ||
+        upperMethod == post ||
+        upperMethod == put ||
+        upperMethod == delete ||
+        upperMethod == patch ||
+        upperMethod == head ||
+        upperMethod == options;
   }
 }

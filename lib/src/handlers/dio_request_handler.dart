@@ -9,6 +9,8 @@ import 'package:dio_flow/src/models/response/error_type.dart';
 import 'package:dio_flow/src/models/response/response_model.dart';
 import 'package:dio_flow/src/models/retry_options.dart';
 import 'package:dio_flow/src/utils/http_methods.dart';
+import 'package:dio_flow/src/utils/token_manager.dart';
+import 'package:dio_flow/src/utils/mock_dio_flow.dart';
 import 'package:log_curl_request/log_curl_request.dart';
 
 /// Utility class for handling HTTP requests through Dio.
@@ -51,8 +53,16 @@ class DioRequestHandler {
     String? methodOverride,
   }) async {
     String logCurl = '';
+
+    // Check if mock mode is enabled
+    if (MockDioFlow.isMockEnabled) {
+      return _handleMockRequest(endpoint, methodOverride ?? HttpMethods.get);
+    }
+
     try {
-      final headers = _header(hasBearerToken: requestOptions.hasBearerToken);
+      final headers = await _header(
+        hasBearerToken: requestOptions.hasBearerToken,
+      );
       ApiClient.dio.options.headers.addAll(headers);
 
       // Get the endpoint path based on the type of endpoint provided
@@ -77,9 +87,10 @@ class DioRequestHandler {
       final dioOptions = requestOptions.toDioOptions(method: methodOverride);
 
       // Create full URL by combining base URL and endpoint path
-      final String fullUrl = Uri.parse(ApiClient.dio.options.baseUrl)
-          .resolve(endpointPath)
-          .toString();
+      final String fullUrl =
+          Uri.parse(
+            ApiClient.dio.options.baseUrl,
+          ).resolve(endpointPath).toString();
 
       logCurl = LogCurlRequest.create(
         dioOptions.method ?? 'GET',
@@ -93,8 +104,8 @@ class DioRequestHandler {
       final CancelToken cancelToken = CancelToken();
       Response response;
 
-      switch (methodOverride?.toUpperCase() ?? HttpMethods.GET) {
-        case HttpMethods.GET:
+      switch (methodOverride?.toUpperCase() ?? HttpMethods.get) {
+        case HttpMethods.get:
           response = await ApiClient.dio.get(
             endpointPath,
             queryParameters: parameters,
@@ -103,7 +114,7 @@ class DioRequestHandler {
             cancelToken: cancelToken,
           );
           break;
-        case HttpMethods.POST:
+        case HttpMethods.post:
           response = await ApiClient.dio.post(
             endpointPath,
             queryParameters: parameters,
@@ -112,7 +123,7 @@ class DioRequestHandler {
             cancelToken: cancelToken,
           );
           break;
-        case HttpMethods.PUT:
+        case HttpMethods.put:
           response = await ApiClient.dio.put(
             endpointPath,
             queryParameters: parameters,
@@ -121,7 +132,7 @@ class DioRequestHandler {
             cancelToken: cancelToken,
           );
           break;
-        case HttpMethods.PATCH:
+        case HttpMethods.patch:
           response = await ApiClient.dio.patch(
             endpointPath,
             queryParameters: parameters,
@@ -129,7 +140,7 @@ class DioRequestHandler {
             cancelToken: cancelToken,
           );
           break;
-        case HttpMethods.DELETE:
+        case HttpMethods.delete:
           response = await ApiClient.dio.delete(
             endpointPath,
             queryParameters: parameters,
@@ -147,10 +158,7 @@ class DioRequestHandler {
         responseData = Map<String, dynamic>.from(response.data);
       } else if (response.data is List) {
         // Handle array responses by wrapping them in a data field
-        responseData = {
-          'data': response.data,
-          'status': response.statusCode,
-        };
+        responseData = {'data': response.data, 'status': response.statusCode};
       } else if (response.data is String && response.data.isNotEmpty) {
         try {
           // Try to parse string as JSON first
@@ -158,27 +166,19 @@ class DioRequestHandler {
           responseData = decoded;
         } catch (e) {
           // If not JSON, wrap the string in a data field
-          responseData = {
-            'data': response.data,
-            'status': response.statusCode,
-          };
+          responseData = {'data': response.data, 'status': response.statusCode};
         }
       } else if (response.data == null) {
         // Handle null responses (like for 204 No Content)
-        responseData = {
-          'status': response.statusCode,
-          'message': 'Success',
-        };
+        responseData = {'status': response.statusCode, 'message': 'Success'};
       } else {
         // For any other type, wrap it in a data field
-        responseData = {
-          'data': response.data,
-          'status': response.statusCode,
-        };
+        responseData = {'data': response.data, 'status': response.statusCode};
       }
 
       // Ensure status code is present
-      if (!responseData.containsKey('status') && !responseData.containsKey('statusCode')) {
+      if (!responseData.containsKey('status') &&
+          !responseData.containsKey('statusCode')) {
         responseData['status'] = response.statusCode;
       }
 
@@ -214,13 +214,12 @@ class DioRequestHandler {
       } else {
         return FailedResponseModel.fromJson(responseData);
       }
-
     } on DioException catch (error, stackTrace) {
       // Determine error type based on Dio error type and status code
       ErrorType errorType;
-      
+
       // Check for preparation errors first
-      if (error.requestOptions.extra.containsKey('errorType') && 
+      if (error.requestOptions.extra.containsKey('errorType') &&
           error.requestOptions.extra['errorType'] == 'preparation_error') {
         errorType = ErrorType.validation;
       } else if (error.response != null) {
@@ -233,9 +232,10 @@ class DioRequestHandler {
 
       // Check if this is a retry attempt
       final bool isRetry = error.requestOptions.extra.containsKey('isRetry');
-      final String message = isRetry 
-          ? 'Request failed after retry: ${error.message}'
-          : error.message ?? 'Request failed';
+      final String message =
+          isRetry
+              ? 'Request failed after retry: ${error.message}'
+              : error.message ?? 'Request failed';
 
       return FailedResponseModel(
         statusCode: error.response?.statusCode ?? 500,
@@ -291,7 +291,7 @@ class DioRequestHandler {
       parameters: parameters,
       data: data,
       requestOptions: requestOptions,
-      methodOverride: HttpMethods.GET,
+      methodOverride: HttpMethods.get,
     );
   }
 
@@ -317,7 +317,7 @@ class DioRequestHandler {
       parameters: parameters,
       data: data,
       requestOptions: requestOptions,
-      methodOverride: HttpMethods.POST,
+      methodOverride: HttpMethods.post,
     );
   }
 
@@ -343,7 +343,7 @@ class DioRequestHandler {
       parameters: parameters,
       data: data,
       requestOptions: requestOptions,
-      methodOverride: HttpMethods.PUT,
+      methodOverride: HttpMethods.put,
     );
   }
 
@@ -368,7 +368,7 @@ class DioRequestHandler {
       endpoint,
       parameters: parameters,
       requestOptions: requestOptions,
-      methodOverride: HttpMethods.PATCH,
+      methodOverride: HttpMethods.patch,
     );
   }
 
@@ -393,7 +393,7 @@ class DioRequestHandler {
       endpoint,
       parameters: parameters,
       requestOptions: requestOptions,
-      methodOverride: HttpMethods.DELETE,
+      methodOverride: HttpMethods.delete,
     );
   }
 
@@ -404,11 +404,72 @@ class DioRequestHandler {
   ///
   /// Returns:
   ///   A map of header key-value pairs.
+  static Future<Map<String, dynamic>> _header({
+    bool hasBearerToken = false,
+  }) async {
+    final Map<String, dynamic> headers = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    };
+
+    if (hasBearerToken) {
+      try {
+        final token = await TokenManager.getAccessToken();
+        if (token != null && token.isNotEmpty) {
+          headers['Authorization'] = 'Bearer $token';
+        }
+      } catch (e) {
+        // If token retrieval fails, continue without authorization header
+        // The request will likely fail with 401, which can be handled by the caller
+      }
+    }
+
+    return headers;
+  }
+
+  /// Handles mock requests when mock mode is enabled.
   ///
-  /// Currently returns an empty map, to be extended with actual headers
-  /// such as authorization tokens, content type, etc.
-  static Map<String, dynamic> _header({bool hasBearerToken = false}) {
-    final Map<String, dynamic> data = {};
-    return data;
+  /// Parameters:
+  ///   endpoint - The API endpoint being called
+  ///   method - The HTTP method being used
+  ///
+  /// Returns:
+  ///   A ResponseModel based on the registered mock response
+  static Future<ResponseModel> _handleMockRequest(
+    dynamic endpoint,
+    String method,
+  ) async {
+    // Get the endpoint path
+    String endpointPath;
+    if (endpoint is ApiEndpointInterface) {
+      endpointPath = endpoint.path;
+    } else if (endpoint is String) {
+      try {
+        endpointPath = EndpointProvider.instance.getEndpoint(endpoint).path;
+      } catch (e) {
+        endpointPath = endpoint;
+      }
+    } else {
+      endpointPath = endpoint.toString();
+    }
+
+    // Get mock response
+    final mockResponse = MockDioFlow.getMockResponse(endpointPath, method);
+
+    if (mockResponse == null) {
+      // No mock registered, return a default error
+      return FailedResponseModel(
+        statusCode: 404,
+        message: 'No mock response registered for $method $endpointPath',
+        logCurl: 'MOCK REQUEST - NO RESPONSE REGISTERED',
+        errorType: ErrorType.notFound,
+      );
+    }
+
+    // Simulate network delay if specified
+    await mockResponse.simulateDelay();
+
+    // Convert mock response to ResponseModel
+    return MockDioFlow.convertToResponseModel(mockResponse);
   }
 }

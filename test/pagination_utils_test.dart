@@ -1,7 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dio_flow/dio_flow.dart';
-import 'package:dio_flow/src/models/response/links_model.dart';
-import 'package:dio_flow/src/models/response/meta_model.dart';
 
 void main() {
   group('PaginationUtils - hasMorePages', () {

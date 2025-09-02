@@ -12,11 +12,13 @@ A powerful Flutter package that enhances Dio HTTP client with built-in support f
 - [Installation](#-installation)
 - [Getting Started](#-getting-started)
 - [Core Components](#-core-components)
-- [Making Requests](#-making-requests)
-- [Response Handling](#-response-handling)
 - [Authentication](#-authentication)
+- [Endpoint Configuration](#-endpoint-configuration)
 - [Advanced Features](#-advanced-features)
-- [Best Practices](#-best-practices)
+- [Best Practices](#️-best-practices)
+- [Mock Support](#-mock-support)
+- [GraphQL Support](#-graphql-support)
+- [File Operations](#-file-operations)
 - [Troubleshooting](#-troubleshooting)
 - [Contributing](#-contributing)
 - [License](#-license)
@@ -35,6 +37,10 @@ A powerful Flutter package that enhances Dio HTTP client with built-in support f
 - **📄 Pagination Support**: Built-in utilities for handling paginated responses
 - **🛡️ Type Safety**: Strong typing throughout the library
 - **🎯 Error Handling**: Comprehensive error handling with typed error responses
+- **🧪 Mock Support**: Built-in mocking for testing without real HTTP calls
+- **🔗 GraphQL Support**: Native GraphQL query, mutation, and subscription support
+- **📁 File Operations**: Easy file upload/download with progress tracking
+- **🔧 Extensible Architecture**: Plugin-based design for custom functionality
 
 ## 📦 Installation
 
@@ -42,7 +48,7 @@ Add to your pubspec.yaml:
 
 ```yaml
 dependencies:
-  dio_flow: ^1.2.0
+  dio_flow: ^1.3.0
 ```
 
 ## 🚀 Getting Started
@@ -204,7 +210,7 @@ Key features:
 
 - Automatic refresh behavior — hasAccessToken() and getAccessToken() will automatically attempt to refresh when the access token is expired only if a refresh handler has been set. If no handler is provided, expired tokens are treated as absent (methods return false/null).
 
--Single-flight refresh protection — internal _refreshCompleter ensures only one refresh request runs at a time; concurrent callers wait for that single result.
+-Single-flight refresh protection — internal \_refreshCompleter ensures only one refresh request runs at a time; concurrent callers wait for that single result.
 
 - Tokens returned by the refresh handler are persisted via setTokens() (keeps state consistent across restarts).
 
@@ -469,6 +475,130 @@ class UserRepository {
 }
 ```
 
+## 🧪 Mock Support
+
+DioFlow includes powerful mocking capabilities for testing:
+
+```dart
+void main() {
+  // Enable mock mode
+  MockDioFlow.enableMockMode();
+
+  // Register mock responses
+  MockDioFlow.mockResponse(
+    'users',
+    MockResponse.success([
+      {'id': 1, 'name': 'John Doe'},
+      {'id': 2, 'name': 'Jane Smith'},
+    ]),
+  );
+
+  // Register response queue for testing pagination
+  MockDioFlow.mockResponseQueue('posts', [
+    MockResponse.success({'page': 1, 'data': [...]}),
+    MockResponse.success({'page': 2, 'data': [...]}),
+  ]);
+
+  // Your tests will now use mocked responses
+  final response = await DioRequestHandler.get('users');
+
+  // Disable mock mode
+  MockDioFlow.disableMockMode();
+}
+```
+
+## 🔗 GraphQL Support
+
+Native GraphQL support with query builder:
+
+```dart
+// Simple query
+final response = await GraphQLHandler.query('''
+  query GetUser($id: ID!) {
+    user(id: $id) {
+      id
+      name
+      email
+    }
+  }
+''', variables: {'id': '123'});
+
+// Using query builder
+final query = GraphQLQueryBuilder.query()
+    .operationName('GetUsers')
+    .variables({'first': 'Int'})
+    .body('users(first: $first) { id name }')
+    .build();
+
+// Mutations
+final mutationResponse = await GraphQLHandler.mutation('''
+  mutation CreateUser($input: CreateUserInput!) {
+    createUser(input: $input) {
+      id
+      name
+    }
+  }
+''', variables: {'input': {'name': 'John', 'email': 'john@example.com'}});
+
+// Batch operations
+final operations = [
+  GraphQLOperation(query: 'query { users { id } }'),
+  GraphQLOperation(query: 'query { posts { id } }'),
+];
+final batchResponse = await GraphQLHandler.batch(operations);
+```
+
+## 📁 File Operations
+
+Easy file upload and download with progress tracking:
+
+```dart
+// File upload
+final file = File('/path/to/file.jpg');
+final uploadResponse = await FileHandler.uploadFile(
+  'upload',
+  file,
+  fieldName: 'avatar',
+  additionalData: {'userId': '123'},
+  onProgress: (sent, total) {
+    print('Upload: ${(sent/total*100).toStringAsFixed(1)}%');
+  },
+);
+
+// Multiple file upload
+final files = {
+  'document': File('/path/to/doc.pdf'),
+  'image': File('/path/to/image.jpg'),
+};
+final multiUploadResponse = await FileHandler.uploadMultipleFiles(
+  'upload-multiple',
+  files,
+);
+
+// File download
+final downloadResponse = await FileHandler.downloadFile(
+  'files/123/download',
+  '/local/path/file.pdf',
+  onProgress: (received, total) {
+    print('Download: ${(received/total*100).toStringAsFixed(1)}%');
+  },
+);
+
+// Download as bytes
+final bytesResponse = await FileHandler.downloadBytes('files/123');
+if (bytesResponse.isSuccess) {
+  final bytes = bytesResponse.data['bytes'] as Uint8List;
+  // Use bytes...
+}
+
+// Upload from bytes
+final bytesUploadResponse = await FileHandler.uploadBytes(
+  'upload',
+  fileBytes,
+  'filename.jpg',
+);
+```
+
 ## 🔍 Troubleshooting
 
 Common issues and solutions:
@@ -485,9 +615,27 @@ Common issues and solutions:
    - Try clearing cache with `ApiClient.clearCache()`
 
 3. **Network Errors**:
+
    - Check connectivity status
    - Verify retry options are configured
    - Examine cURL logs for request details
+
+4. **Mock Issues**:
+
+   - Ensure `MockDioFlow.enableMockMode()` is called before requests
+   - Verify mock responses are registered for the correct endpoints
+   - Check that endpoint paths match exactly
+
+5. **GraphQL Errors**:
+
+   - Validate GraphQL syntax in queries
+   - Check that variables match the schema
+   - Ensure the GraphQL endpoint is correctly configured
+
+6. **File Upload Issues**:
+   - Verify file permissions and paths
+   - Check server file size limits
+   - Ensure correct Content-Type headers for multipart uploads
 
 ### Debug Mode
 

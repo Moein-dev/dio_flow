@@ -200,3 +200,12 @@ abstract class ResponseModel {
     );
   }
 }
+
+/// Extension to add convenience methods to ResponseModel
+extension ResponseModelExtension on ResponseModel {
+  /// Returns true if this is a successful response.
+  bool get isSuccess => this is SuccessResponseModel;
+
+  /// Returns true if this is a failed response.
+  bool get isFailure => this is FailedResponseModel;
+}
