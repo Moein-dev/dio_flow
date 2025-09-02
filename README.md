@@ -163,7 +163,7 @@ void main() async {
 // 📡 Make your first request
 final response = await DioRequestHandler.get('users');
 
-if (response.isSuccess) {
+if (response is SuccessResponseModel) {
   print('✅ Success: ${response.data}');
 } else {
   print('❌ Error: ${response.error?.message}');
