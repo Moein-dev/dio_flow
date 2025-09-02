@@ -248,7 +248,7 @@ final loginResponse = await DioRequestHandler.post<LoginResponse>(
 All responses are wrapped in typed models:
 
 ```dart
-if (response.isSuccess) {
+if (response is SuccessResponseModel) {
   final data = response.data;
   // Handle success
 } else {
@@ -301,7 +301,7 @@ void main() async {
       requestOptions: RequestOptionsModel(hasBearerToken: false),
     );
 
-    if (!refreshResp.isSuccess) {
+    if (refreshResp is! SuccessResponseModel) {
       throw ApiException('Refresh failed: ${refreshResp.error?.message ?? 'unknown'}');
     }
 
@@ -550,7 +550,7 @@ final response = await DioRequestHandler.get<UserResponse>(
 ```dart
 // Create a reusable error handler
 Future<T> handleApiResponse<T>(ResponseModel response) async {
-  if (response.isSuccess) {
+  if (response is SuccessResponseModel) {
     return response.data as T;
   }
 
@@ -779,7 +779,7 @@ final bytesUploadResponse = await FileHandler.uploadBytes(
 
 // Download as bytes (web-compatible)
 final bytesResponse = await FileHandler.downloadBytes('files/123');
-if (bytesResponse.isSuccess) {
+if (bytesResponse is SuccessResponseModel) {
   final bytes = bytesResponse.data['bytes'] as Uint8List;
   // Use bytes for web download (e.g., trigger browser download)
 }
