@@ -1,14 +1,11 @@
-// dio_interceptor.dart
-
 import 'dart:developer';
 import 'package:dio/dio.dart';
 import 'package:dio_flow/src/config/dio_flow_config.dart';
 import 'package:dio_flow/src/utils/token_manager.dart';
+import 'package:flutter/foundation.dart';
 import 'package:log_curl_request/log_curl_request.dart';
 
-/// Interceptor that handles common Dio request/response processing.
 class DioInterceptor extends Interceptor {
-  /// Internal Dio instance for retries and token refresh (no interceptors attached).
   final Dio dio;
 
   DioInterceptor()
@@ -31,14 +28,15 @@ class DioInterceptor extends Interceptor {
       options.headers.putIfAbsent("Content-Type", () => "application/json");
       options.headers.putIfAbsent("Accept", () => "application/json");
 
-      LogCurlRequest.create(
-        options.method,
-        options.uri.toString(),
-        parameters: options.queryParameters,
-        data: options.data,
-        headers: options.headers,
-      );
-
+      if (kDebugMode) {
+        LogCurlRequest.create(
+          options.method,
+          options.uri.toString(),
+          parameters: options.queryParameters,
+          data: options.data,
+          headers: options.headers,
+        );
+      }
       handler.next(options);
     } catch (error) {
       String errorMessage = 'Request preparation failed';
@@ -63,8 +61,11 @@ class DioInterceptor extends Interceptor {
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
     try {
-      if (response.requestOptions.extra.containsKey('log_curl')) {
-        response.extra['log_curl'] = response.requestOptions.extra['log_curl'];
+      if (kDebugMode) {
+        if (response.requestOptions.extra.containsKey('log_curl')) {
+          response.extra['log_curl'] =
+              response.requestOptions.extra['log_curl'];
+        }
       }
     } catch (_) {}
     handler.next(response);
@@ -75,14 +76,12 @@ class DioInterceptor extends Interceptor {
     final requestOptions = err.requestOptions;
 
     String cUrl = requestOptions.extra['log_curl'] ?? '';
-    if (cUrl.isNotEmpty) {
-      log(cUrl);
+    if (cUrl.isNotEmpty && kDebugMode) {
       if (err.response != null) {
         err.response!.extra = {...err.response!.extra, 'log_curl': cUrl};
       }
     }
 
-    // فقط refresh token روی 401، و فقط اگر این خطا از retry-loop نیومده
     final isRetry = requestOptions.extra['isRetry'] == true;
     if (err.response?.statusCode == 401 && !isRetry) {
       try {
@@ -90,18 +89,11 @@ class DioInterceptor extends Interceptor {
         final newToken = await TokenManager.getAccessToken();
         if (newToken != null) {
           final newOptions = requestOptions.copyWith(
-            extra: {
-              ...requestOptions.extra,
-              'isRetry': true,
-              'log_curl': cUrl,
-            },
+            extra: {...requestOptions.extra, 'isRetry': true, 'log_curl': cUrl},
           );
           newOptions.headers["Authorization"] = "Bearer $newToken";
           final retriedResponse = await dio.fetch(newOptions);
-          retriedResponse.extra = {
-            ...retriedResponse.extra,
-            'log_curl': cUrl,
-          };
+          retriedResponse.extra = {...retriedResponse.extra, 'log_curl': cUrl};
           handler.resolve(retriedResponse);
           return;
         }

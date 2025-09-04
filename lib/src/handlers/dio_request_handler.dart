@@ -1,5 +1,3 @@
-// dio_request_handler.dart
-
 import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:dio_flow/src/base/api_client.dart';
@@ -12,24 +10,25 @@ import 'package:dio_flow/src/models/retry_options.dart';
 import 'package:dio_flow/src/utils/http_methods.dart';
 import 'package:dio_flow/src/utils/token_manager.dart';
 import 'package:dio_flow/src/utils/mock_dio_flow.dart';
+import 'package:flutter/foundation.dart';
 
-/// Utility class for handling HTTP requests through Dio.
-///
 class DioRequestHandler {
   DioRequestHandler._();
 
-  static final RetryOptions retryOptions = RetryOptions(
-    maxAttempts: 3,
-    retryInterval: const Duration(seconds: 1),
-  );
 
-    static Future<ResponseModel> _executeRequest(
+
+  static Future<ResponseModel> _executeRequest(
     dynamic endpoint, {
     Map<String, dynamic>? parameters,
     dynamic data,
     required RequestOptionsModel requestOptions,
     String? methodOverride,
   }) async {
+   final RetryOptions retryOptions = RetryOptions(
+    maxAttempts: requestOptions.retryCount,
+    retryInterval: requestOptions.retryInterval,
+  );
+
     if (MockDioFlow.isMockEnabled) {
       return _handleMockRequest(endpoint, methodOverride ?? HttpMethods.get);
     }
@@ -135,10 +134,12 @@ class DioRequestHandler {
           responseData = {'data': response.data, 'status': response.statusCode};
         } else if (response.data is String && response.data.isNotEmpty) {
           try {
-            responseData =
-                Map<String, dynamic>.from(jsonDecode(response.data));
+            responseData = Map<String, dynamic>.from(jsonDecode(response.data));
           } catch (_) {
-            responseData = {'data': response.data, 'status': response.statusCode};
+            responseData = {
+              'data': response.data,
+              'status': response.statusCode,
+            };
           }
         } else if (response.data == null) {
           responseData = {'status': response.statusCode, 'message': 'Success'};
@@ -153,10 +154,12 @@ class DioRequestHandler {
 
         final logCurlFromResponse = response.extra['log_curl'];
         final logCurlFromRequest = response.requestOptions.extra['log_curl'];
-        if (logCurlFromResponse != null) {
-          responseData['log_curl'] = logCurlFromResponse;
-        } else if (logCurlFromRequest != null) {
-          responseData['log_curl'] = logCurlFromRequest;
+        if (kDebugMode) {
+          if (logCurlFromResponse != null) {
+            responseData['log_curl'] = logCurlFromResponse;
+          } else if (logCurlFromRequest != null) {
+            responseData['log_curl'] = logCurlFromRequest;
+          }
         }
 
         if (response.headers.map.isNotEmpty) {
@@ -187,12 +190,15 @@ class DioRequestHandler {
         final isLast = attempt == maxAttempts - 1;
 
         String logCurl = 'No log available';
-        try {
-          logCurl = dioOptions.extra?['log_curl'] ??
-              error.requestOptions.extra['log_curl'] ??
-              error.response?.extra['log_curl'] ??
-              'No log available';
-        } catch (_) {}
+        if (kDebugMode) {
+          try {
+            logCurl =
+                dioOptions.extra?['log_curl'] ??
+                error.requestOptions.extra['log_curl'] ??
+                error.response?.extra['log_curl'] ??
+                'No log available';
+          } catch (_) {}
+        }
 
         final statusCode = error.response?.statusCode;
         if (statusCode != 401 && !isLast) {
@@ -206,7 +212,9 @@ class DioRequestHandler {
         if (error.requestOptions.extra['errorType'] == 'preparation_error') {
           errorType = ErrorType.validation;
         } else if (error.response != null) {
-          errorType = ErrorType.fromStatusCode(error.response!.statusCode ?? 500);
+          errorType = ErrorType.fromStatusCode(
+            error.response!.statusCode ?? 500,
+          );
         } else {
           errorType = ErrorType.fromDioErrorType(error.type);
         }
@@ -215,9 +223,10 @@ class DioRequestHandler {
 
         return FailedResponseModel(
           statusCode: error.response?.statusCode ?? 500,
-          message: isRetry
-              ? 'Request failed after ${attempt + 1} attempts: ${error.message}'
-              : error.message ?? 'Request failed',
+          message:
+              isRetry
+                  ? 'Request failed after ${attempt + 1} attempts: ${error.message}'
+                  : error.message ?? 'Request failed',
           logCurl: logCurl,
           stackTrace: stackTrace,
           error: error,
@@ -229,7 +238,7 @@ class DioRequestHandler {
     return FailedResponseModel(
       statusCode: 500,
       message: 'Unknown error after retries',
-      logCurl: dioOptions.extra?['log_curl'] ?? 'No log available',
+      logCurl: kDebugMode ? (dioOptions.extra?['log_curl'] ?? 'No log available') : 'No log available',
       errorType: ErrorType.unknown,
     );
   }
