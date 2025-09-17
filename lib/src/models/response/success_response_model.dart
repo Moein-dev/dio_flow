@@ -42,13 +42,18 @@ class SuccessResponseModel extends ResponseModel {
   ///
   /// Returns:
   ///   A new SuccessResponseModel instance populated with the parsed data
-  factory SuccessResponseModel.fromJson(Map<String, dynamic> json) {
-    // Extract the cURL log or provide an empty string if not present
-    final logCurl = json["log_curl"] ?? "";
-
+  factory SuccessResponseModel.fromJson(
+    Map<String, dynamic> json, {
+    String? endpointPath = '',
+    String logCurl = '',
+    bool fromCache = false,
+    bool isRefreshHandle = false,
+  }) {
     // Extract the status code or default to 200 (OK)
     final statusCode =
         json["status"] ?? json["statusCode"] ?? json["code"] ?? 200;
+
+    final extra = json['extra'];
 
     // Extract the data using a flexible approach
     final data = _extractData(json);
@@ -61,6 +66,20 @@ class SuccessResponseModel extends ResponseModel {
 
     // Extract metadata if available
     final meta = _extractMeta(json);
+
+
+    DioFlowLog(
+      url: DioFlowConfig.instance.baseUrl + endpointPath!,
+      type: DioLogType.response,
+      statusCode: statusCode,
+      message: message,
+      data: data,
+      headers: json['headers'],
+      logCurl: logCurl,
+      isCache: fromCache,
+      extra: extra,
+      isRefreshHandle: isRefreshHandle,
+    ).log();
 
     return SuccessResponseModel(
       logCurl: logCurl,

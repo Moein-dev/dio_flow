@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:dio_flow/dio_flow.dart';
 
-void main() {
+void main() async{
+  WidgetsFlutterBinding.ensureInitialized();
   // Initialize the API client when the app starts
-  _initApiClient();
+  await _initApiClient();
   runApp(const MyApp());
 }
 
 // Initialize the API client with configuration
-void _initApiClient() {
+Future<void> _initApiClient() async{
   // Configure the API client with base URL and timeouts
   DioFlowConfig.initialize(
     baseUrl: 'https://jsonplaceholder.typicode.com',
@@ -16,7 +17,7 @@ void _initApiClient() {
     receiveTimeout: const Duration(seconds: 3),
     sendTimeout: const Duration(seconds: 3),
   );
-
+  await ApiClient.initialize();
   // Register endpoints that will be used in the app
   _registerApiEndpoints();
 }

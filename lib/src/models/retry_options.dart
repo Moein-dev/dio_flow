@@ -26,7 +26,14 @@ class RetryOptions {
   const RetryOptions({
     this.maxAttempts = 3,
     this.retryInterval = const Duration(seconds: 1),
-    this.retryStatusCodes = const [408, 500, 502, 503, 504],
+    this.retryStatusCodes = const [
+      408, // Request Timeout
+      429, // Too Many Requests (rate limiting)
+      500, // Internal Server Error
+      502, // Bad Gateway
+      503, // Service Unavailable
+      504, // Gateway Timeout
+    ],
     this.retryOnConnectionTimeout = true,
     this.retryOnReceiveTimeout = true,
   });
@@ -43,8 +50,10 @@ class RetryOptions {
       maxAttempts: maxAttempts ?? this.maxAttempts,
       retryInterval: retryInterval ?? this.retryInterval,
       retryStatusCodes: retryStatusCodes ?? this.retryStatusCodes,
-      retryOnConnectionTimeout: retryOnConnectionTimeout ?? this.retryOnConnectionTimeout,
-      retryOnReceiveTimeout: retryOnReceiveTimeout ?? this.retryOnReceiveTimeout,
+      retryOnConnectionTimeout:
+          retryOnConnectionTimeout ?? this.retryOnConnectionTimeout,
+      retryOnReceiveTimeout:
+          retryOnReceiveTimeout ?? this.retryOnReceiveTimeout,
     );
   }
 
@@ -55,12 +64,5 @@ class RetryOptions {
   static const RetryOptions slowNetwork = RetryOptions(
     maxAttempts: 5,
     retryInterval: Duration(seconds: 2),
-  );
-
-  /// Retry options for critical operations that need more attempts.
-  static const RetryOptions critical = RetryOptions(
-    maxAttempts: 7,
-    retryInterval: Duration(seconds: 1),
-    retryStatusCodes: [408, 429, 500, 502, 503, 504],
   );
 }

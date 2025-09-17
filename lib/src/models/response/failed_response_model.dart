@@ -44,13 +44,20 @@ class FailedResponseModel extends ResponseModel {
   ///
   /// Returns:
   ///   A new FailedResponseModel instance populated with the parsed error data
-  factory FailedResponseModel.fromJson(Map<String, dynamic> json) {
-    // Extract the cURL log or provide an empty string if not present
-    final logCurl = json["log_curl"] ?? "";
+  factory FailedResponseModel.fromJson(
+    Map<String, dynamic> json, {
+    String endpointPath = '',
+    String logCurl = '',
+    bool fromCache = false,
+    bool isRefreshHandle = false,
+  }) {
+    ;
 
     // Extract the status code or default to 400 (Bad Request)
     final statusCode =
         json["status"] ?? json["statusCode"] ?? json["code"] ?? 400;
+
+    final extra = json['extra'];
 
     // Extract the error message using a flexible approach
     final message = _extractErrorMessage(json);
@@ -60,6 +67,18 @@ class FailedResponseModel extends ResponseModel {
 
     // Determine the error type based on status code
     final errorType = ErrorType.fromStatusCode(statusCode);
+
+    DioFlowLog(
+      url: DioFlowConfig.instance.baseUrl + endpointPath,
+      type: DioLogType.error,
+      statusCode: statusCode,
+      message: message,
+      error: error,
+      logCurl: logCurl,
+      isCache: fromCache,
+      extra: extra,
+      isRefreshHandle: isRefreshHandle,
+    ).log();
 
     return FailedResponseModel(
       logCurl: logCurl,

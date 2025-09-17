@@ -58,6 +58,7 @@ class RateLimitInterceptor extends Interceptor {
       final oldestRequest = _requestTimestamps.first;
       final waitTime = interval - now.difference(oldestRequest);
 
+
       return handler.reject(
         DioException(
           requestOptions: options,

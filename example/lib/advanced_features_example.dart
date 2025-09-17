@@ -312,8 +312,6 @@ Future<void> realWorldExample() async {
       'user/profile',
       requestOptions: const RequestOptionsModel(
         hasBearerToken: true,
-        shouldCache: true,
-        cacheDuration: Duration(minutes: 5),
       ),
     );
 
