@@ -74,6 +74,11 @@ class ApiClient {
     return dio;
   }
 
+  static Future<void> clearCache() async {
+    _sharedPreferences ??= await SharedPreferences.getInstance();
+    await _sharedPreferences!.clear();
+  }
+
   static void reset() {
     _dio?.close();
     _dio = null;

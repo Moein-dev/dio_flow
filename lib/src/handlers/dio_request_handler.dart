@@ -13,6 +13,7 @@ class DioRequestHandler {
     dynamic data,
     required RequestOptionsModel requestOptions,
     String? methodOverride,
+    CancelToken? cancelToken,
   }) async {
     // Handle Mock Data Process
     if (MockDioFlow.isMockEnabled) {
@@ -22,10 +23,12 @@ class DioRequestHandler {
       );
     }
 
+    final CancelToken internalCancelToken = cancelToken ?? CancelToken();
+
     // Prepare Header
     Map<String, dynamic> headers = await DioHndlerHelper.prepareHeaders(
       hasBearerToken: requestOptions.hasBearerToken,
-      additionalHeaders: requestOptions.headers ?? {},
+      additionalHeaders: requestOptions.customHeaders ?? {},
     );
 
     // Provideded Uri
@@ -55,7 +58,6 @@ class DioRequestHandler {
       headers: headers,
     );
 
-    final CancelToken cancelToken = CancelToken();
     final int maxAttempts = requestOptions.retryOptions.maxAttempts;
     final Duration interval = requestOptions.retryOptions.retryInterval;
 
@@ -106,7 +108,7 @@ class DioRequestHandler {
               endpointPath,
               queryParameters: parameters,
               options: optionsThisAttempt,
-              cancelToken: cancelToken,
+              cancelToken: internalCancelToken,
             );
             break;
           case HttpMethods.post:
@@ -115,7 +117,7 @@ class DioRequestHandler {
               queryParameters: parameters,
               data: data,
               options: optionsThisAttempt,
-              cancelToken: cancelToken,
+              cancelToken: internalCancelToken,
             );
             break;
           case HttpMethods.put:
@@ -124,7 +126,7 @@ class DioRequestHandler {
               queryParameters: parameters,
               data: data,
               options: optionsThisAttempt,
-              cancelToken: cancelToken,
+              cancelToken: internalCancelToken,
             );
             break;
           case HttpMethods.patch:
@@ -133,7 +135,7 @@ class DioRequestHandler {
               queryParameters: parameters,
               data: data,
               options: optionsThisAttempt,
-              cancelToken: cancelToken,
+              cancelToken: internalCancelToken,
             );
             break;
           case HttpMethods.delete:
@@ -141,7 +143,7 @@ class DioRequestHandler {
               endpointPath,
               queryParameters: parameters,
               options: optionsThisAttempt,
-              cancelToken: cancelToken,
+              cancelToken: internalCancelToken,
             );
             break;
           default:
@@ -358,7 +360,16 @@ class DioRequestHandler {
           parameters: parameters,
           headers: headers,
         );
-        
+
+        // if cancell request
+        if (error.type == DioExceptionType.cancel) {
+          return FailedResponseModel.fromJson(
+            {'status': 499, 'message': 'Request cancelled by user'},
+            endpointPath: endpointPath,
+            logCurl: exeptionCurlCommand,
+          );
+        }
+
         if (!isLastAttempt && DioHndlerHelper.shouldRetry(null, null, error)) {
           /// Create Console Log For this Atetempts
           DioFlowLog(
@@ -368,10 +379,11 @@ class DioRequestHandler {
             data: data,
             headers: Map<String, dynamic>.from(newOptions.headers ?? {}),
             parameters: parameters,
-            extra: newOptions.extra,
+            extra: optionsThisAttempt.extra,
             logCurl: curlCommand,
             isCache: cacheLoad,
             retryCount: attempt,
+            maxAttempts: maxAttempts,
           ).log();
           await Future.delayed(interval);
           continue; // retry
@@ -397,6 +409,7 @@ class DioRequestHandler {
     Map<String, dynamic>? parameters,
     dynamic data,
     RequestOptionsModel requestOptions = const RequestOptionsModel(),
+    CancelToken? cancelToken,
   }) async {
     return _executeRequest(
       endpoint,
@@ -404,6 +417,7 @@ class DioRequestHandler {
       data: data,
       requestOptions: requestOptions,
       methodOverride: HttpMethods.get,
+      cancelToken: cancelToken,
     );
   }
 
@@ -412,6 +426,7 @@ class DioRequestHandler {
     Map<String, dynamic>? parameters,
     dynamic data,
     RequestOptionsModel requestOptions = const RequestOptionsModel(),
+    CancelToken? cancelToken,
   }) async {
     return _executeRequest(
       endpoint,
@@ -419,6 +434,7 @@ class DioRequestHandler {
       data: data,
       requestOptions: requestOptions,
       methodOverride: HttpMethods.post,
+      cancelToken: cancelToken,
     );
   }
 
@@ -427,6 +443,7 @@ class DioRequestHandler {
     Map<String, dynamic>? parameters,
     dynamic data,
     RequestOptionsModel requestOptions = const RequestOptionsModel(),
+    CancelToken? cancelToken,
   }) async {
     return _executeRequest(
       endpoint,
@@ -434,6 +451,7 @@ class DioRequestHandler {
       data: data,
       requestOptions: requestOptions,
       methodOverride: HttpMethods.put,
+      cancelToken: cancelToken,
     );
   }
 
@@ -442,6 +460,7 @@ class DioRequestHandler {
     Map<String, dynamic>? parameters,
     dynamic data,
     RequestOptionsModel requestOptions = const RequestOptionsModel(),
+    CancelToken? cancelToken,
   }) async {
     return _executeRequest(
       endpoint,
@@ -449,6 +468,7 @@ class DioRequestHandler {
       data: data,
       requestOptions: requestOptions,
       methodOverride: HttpMethods.patch,
+      cancelToken: cancelToken,
     );
   }
 
@@ -456,12 +476,14 @@ class DioRequestHandler {
     dynamic endpoint, {
     Map<String, dynamic>? parameters,
     RequestOptionsModel requestOptions = const RequestOptionsModel(),
+    CancelToken? cancelToken,
   }) async {
     return _executeRequest(
       endpoint,
       parameters: parameters,
       requestOptions: requestOptions,
       methodOverride: HttpMethods.delete,
+      cancelToken: cancelToken,
     );
   }
 }

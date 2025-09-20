@@ -153,6 +153,9 @@ void main() async {
   // 🚀 Initialize the client
   await ApiClient.initialize();
 
+  // 🔑 Initialize token management
+  await TokenManager.initialize();
+
   runApp(MyApp());
 }
 ```
@@ -170,45 +173,6 @@ if (response is SuccessResponseModel) {
 }
 ```
 
-### 🔧 Advanced Configuration
-
-```dart
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  // 🔧 Advanced configuration
-  DioFlowConfig.initialize(
-    baseUrl: 'https://api.example.com',
-    connectTimeout: const Duration(seconds: 30),
-    receiveTimeout: const Duration(seconds: 30),
-    sendTimeout: const Duration(seconds: 30),
-
-    // 🔍 Enable detailed logging
-    debugMode: true,
-
-    // 🔒 Security headers
-    defaultHeaders: {
-      'User-Agent': 'MyApp/1.0.0',
-      'Accept': 'application/json',
-    },
-
-    // 🔄 Retry configuration
-    retryOptions: RetryOptions(
-      maxAttempts: 3,
-      retryInterval: const Duration(seconds: 2),
-    ),
-  );
-
-  // 🔑 Initialize token management
-  await TokenManager.initialize();
-
-  // 🚀 Initialize API client
-  await ApiClient.initialize();
-
-  runApp(MyApp());
-}
-```
-
 ## 🎯 Core Components
 
 ### DioRequestHandler
@@ -222,7 +186,10 @@ final response = await DioRequestHandler.get(
   parameters: {'role': 'admin'},
   requestOptions: RequestOptionsModel(
     hasBearerToken: true,
-    shouldCache: true,
+    cacheOptions: CacheOptions(
+      shouldCache: true,
+      cacheDuration: const Duration(minutes: 5),
+    ),
     retryOptions: RetryOptions(
       maxAttempts: 3,
       retryInterval: const Duration(seconds: 1),
@@ -270,14 +237,13 @@ if (response is SuccessResponseModel) {
 
 ### Interceptors
 
-The package includes several built-in interceptors:
+The package includes several built-in interceptors that are automatically configured:
 
-1. **MetricsInterceptor**: Tracks request performance
-2. **RateLimitInterceptor**: Prevents API throttling
-3. **DioInterceptor**: Handles authentication and headers
-4. **RetryInterceptor**: Manages request retries
-5. **ConnectivityInterceptor**: Handles network state
-6. **CacheInterceptor**: Manages response caching
+1. **MetricsInterceptor**: Tracks request performance and timing
+2. **CacheInterceptor**: Manages response caching with SharedPreferences
+3. **RateLimitInterceptor**: Prevents API throttling (30 requests per minute by default)
+
+These interceptors are automatically added to the Dio instance when `ApiClient.initialize()` is called. No additional configuration is required.
 
 ## 🔑 Authentication
 
@@ -293,25 +259,23 @@ void main() async {
 
   // Register refresh logic (consumer-side). Optional — if you don't set it,
   // automatic refresh will be disabled and TokenManager will return null on expired token.
-    TokenManager.setRefreshHandler((refreshToken) async {
-    // Use DioRequestHandler to call refresh endpoint (consumer controls endpoint details).
-    final refreshResp = await DioRequestHandler.post(
-      'auth/refresh',
-      data: {'refresh_token': refreshToken},
+  TokenManager.setRefreshHandler((refreshToken) async {
+    final refreshResp = await DioRefreshTokenRequestHandle.post(
+      ApiEndpointsKey.refreshToken,
+      data: {'refreshToken': refreshToken},
     );
 
     if (refreshResp is! SuccessResponseModel) {
-      throw ApiException('Refresh failed: ${refreshResp.error?.message ?? 'unknown'}');
+      // go to login page
     }
 
     final data = refreshResp.data!;
-    final expiresIn = (data['expires_in'] as int?) ?? 3600;
 
     return RefreshTokenResponse(
-      accessToken: data['access_token'] as String,
-      refreshToken: data['refresh_token'] as String,
-      expiry: DateTime.now().add(Duration(seconds: expiresIn)),
-    );
+      accessToken: data['accessToken'] as String,
+      refreshToken: data['refreshToken'] as String?,
+      expiry: DateTime.now().add(Duration(days: 29)),
+      );
   });
 
   runApp(MyApp());
@@ -407,8 +371,25 @@ final response = await DioRequestHandler.get(
 final response = await DioRequestHandler.get(
   'users',
   requestOptions: RequestOptionsModel(
-    shouldCache: true,
-    cacheMaxAge: const Duration(minutes: 5),
+    cacheOptions: CacheOptions(
+      shouldCache: true,
+      cacheDuration: const Duration(minutes: 5),
+    ),
+  ),
+);
+
+// Use predefined cache options
+final shortCacheResponse = await DioRequestHandler.get(
+  'frequent-data',
+  requestOptions: RequestOptionsModel(
+    cacheOptions: CacheOptions.shortApiCache, // 1 minute cache
+  ),
+);
+
+final longCacheResponse = await DioRequestHandler.get(
+  'static-data',
+  requestOptions: RequestOptionsModel(
+    cacheOptions: CacheOptions.longApiCache, // 1 hour cache
   ),
 );
 
@@ -457,14 +438,51 @@ final responses = await Future.wait([
   DioRequestHandler.get('comments'),
 ]);
 
-// Handle rate limiting automatically
+// Rate limiting is handled automatically by RateLimitInterceptor
+// Configure in ApiClient initialization (30 requests per minute by default)
 final rateLimitedResponse = await DioRequestHandler.get(
   'high-frequency-endpoint',
+  requestOptions: RequestOptionsModel(hasBearerToken: true),
+);
+```
+
+### Retry Configuration
+
+```dart
+// Use predefined retry options for slow networks
+final response = await DioRequestHandler.get(
+  'unreliable-endpoint',
   requestOptions: RequestOptionsModel(
-    shouldRateLimit: true,
-    rateLimit: 30, // requests per minute
+    retryOptions: RetryOptions.slowNetwork, // 5 attempts, 2 second intervals
   ),
 );
+
+// Custom retry configuration
+final customRetryResponse = await DioRequestHandler.get(
+  'custom-endpoint',
+  requestOptions: RequestOptionsModel(
+    retryOptions: RetryOptions(
+      maxAttempts: 5,
+      retryInterval: const Duration(seconds: 2),
+      retryStatusCodes: [408, 429, 500, 502, 503, 504],
+    ),
+  ),
+);
+```
+
+### Cancell Request
+
+```dart
+// Use canceel token for Cancell Request every time
+final CancelToken testCancellToken = CancelToken();
+
+final response = await DioRequestHandler.get(
+  'test-endpoint',
+  ccancelToken: testCancelToken,
+);
+
+// For use :
+testCancelToken?.cancel('test_request_cancelled');
 ```
 
 ### Custom Response Types
@@ -622,8 +640,10 @@ class UserRepository {
 final response = await DioRequestHandler.get(
   'static-data',
   requestOptions: RequestOptionsModel(
-    shouldCache: true,
-    cacheMaxAge: const Duration(hours: 1), // Cache static data longer
+    cacheOptions: CacheOptions(
+      shouldCache: true,
+      cacheDuration: const Duration(hours: 1), // Cache static data longer
+    ),
   ),
 );
 
@@ -742,7 +762,7 @@ Dio Flow provides comprehensive file operations that work consistently across al
 ### Mobile/Desktop Platforms (iOS, Android, Windows, macOS, Linux)
 
 ```dart
-// File upload from File object
+// File upload from File object (Mobile/Desktop only)
 final file = File('/path/to/file.jpg');
 final uploadResponse = await FileHandler.uploadFile(
   'upload',
@@ -754,7 +774,7 @@ final uploadResponse = await FileHandler.uploadFile(
   },
 );
 
-// File download to disk
+// File download to disk (Mobile/Desktop only)
 final downloadResponse = await FileHandler.downloadFile(
   'files/123/download',
   '/local/path/file.pdf',
@@ -853,15 +873,13 @@ final bytesUploadResponse = await FileHandler.uploadBytes(
 // Enable detailed logging
 DioFlowConfig.initialize(
   baseUrl: 'https://api.example.com',
-  debugMode: true, // This will enable detailed logging
+  // Debug logging is enabled by default in development
 );
 
-// Log specific requests
+// All requests are automatically logged with cURL commands
 final response = await DioRequestHandler.get(
   'users',
-  requestOptions: RequestOptionsModel(
-    shouldLogRequest: true, // Log this specific request
-  ),
+  requestOptions: RequestOptionsModel(hasBearerToken: true),
 );
 ```
 
@@ -896,8 +914,10 @@ final profile = await DioRequestHandler.get(
 final cached = await DioRequestHandler.get(
   'static-data',
   requestOptions: RequestOptionsModel(
-    shouldCache: true,
-    cacheMaxAge: Duration(minutes: 30),
+    cacheOptions: CacheOptions(
+      shouldCache: true,
+      cacheDuration: Duration(minutes: 30),
+    ),
   ),
 );
 ```
@@ -936,6 +956,9 @@ final download = await FileHandler.downloadFile('files/123', '/path/file.pdf');
 
 // Download bytes (all platforms)
 final download = await FileHandler.downloadBytes('files/123');
+
+// Get file information without downloading
+final fileInfo = await FileHandler.getFileInfo('files/123');
 ```
 
 #### 🧪 Testing Cheat Sheet

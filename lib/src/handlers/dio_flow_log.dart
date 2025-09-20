@@ -174,9 +174,7 @@ class DioFlowLog {
       if (method != null)
         outLines.add('$colorCode║ Method: $method$resetColor');
       if (isRefreshHandle) {
-        outLines.add(
-          '$colorCode║ * Token refresh failed... *$resetColor',
-        );
+        outLines.add('$colorCode║ * Token refresh failed... *$resetColor');
       }
       if (statusCode != null)
         outLines.add('$colorCode║ Status Code: $statusCode$resetColor');
@@ -221,7 +219,11 @@ class DioFlowLog {
 
     final trimmed = content.trim();
     final firstCap = maxLineLength - firstPrefix.length;
-    final contPrefix = '  ';
+
+    // create continuation prefix that shows the box border and aligns with firstPrefix
+    final int contSpaces = firstPrefix.length > 2 ? firstPrefix.length - 2 : 2;
+    final String contPrefix = '║ ' + ''.padLeft(contSpaces);
+
     final contCap = maxLineLength - contPrefix.length;
 
     if (firstCap <= 10) {
@@ -252,26 +254,26 @@ class DioFlowLog {
 
     return lines;
   }
-}
 
-String numberToOrdinalUpTo10(int n) {
-  const ordinals = [
-    "",
-    "first",
-    "second",
-    "third",
-    "fourth",
-    "fifth",
-    "sixth",
-    "seventh",
-    "eighth",
-    "ninth",
-    "tenth",
-  ];
+  String numberToOrdinalUpTo10(int n) {
+    const ordinals = [
+      "",
+      "first",
+      "second",
+      "third",
+      "fourth",
+      "fifth",
+      "sixth",
+      "seventh",
+      "eighth",
+      "ninth",
+      "tenth",
+    ];
 
-  if (n >= 1 && n <= 10) {
-    return ordinals[n];
-  } else {
-    return "out of range (only 1..10 supported)";
+    if (n >= 1 && n <= 10) {
+      return ordinals[n];
+    } else {
+      return "out of range (only 1..10 supported)";
+    }
   }
 }

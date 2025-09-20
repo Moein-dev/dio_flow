@@ -16,16 +16,13 @@ class RequestOptionsModel {
   final RetryOptions retryOptions;
 
   /// user extra
-  final Map<String, dynamic>? userExtra;
+  final Map<String, dynamic>? customExtra;
 
   /// Custom headers to include in the request.
-  final Map<String, dynamic>? headers;
+  final Map<String, dynamic>? customHeaders;
 
   /// The response type (e.g., json, stream, plain, bytes).
   final ResponseType? responseType;
-
-  /// Custom status code validator.
-  final ValidateStatus? validateStatus;
 
   /// Whether to receive data when status code indicates error.
   final bool? receiveDataWhenStatusError;
@@ -52,14 +49,13 @@ class RequestOptionsModel {
     this.hasBearerToken = false,
     this.cacheOptions = CacheOptions.defaultOptions,
     this.retryOptions = RetryOptions.defaultOptions,
-    this.headers,
+    this.customHeaders,
     this.responseType,
-    this.validateStatus,
     this.receiveDataWhenStatusError,
     this.followRedirects,
     this.maxRedirects,
     this.persistentConnection,
-    this.userExtra,
+    this.customExtra,
   });
 
   RetryOptions get effectiveRetryOptions => retryOptions;
@@ -84,15 +80,14 @@ class RequestOptionsModel {
       hasBearerToken: hasBearerToken ?? this.hasBearerToken,
       retryOptions: retryOptions ?? this.retryOptions,
       cacheOptions: cacheOptions ?? this.cacheOptions,
-      headers: headers ?? this.headers,
+      customHeaders: headers ?? this.customHeaders,
       responseType: responseType ?? this.responseType,
-      validateStatus: validateStatus ?? this.validateStatus,
       receiveDataWhenStatusError:
           receiveDataWhenStatusError ?? this.receiveDataWhenStatusError,
       followRedirects: followRedirects ?? this.followRedirects,
       maxRedirects: maxRedirects ?? this.maxRedirects,
       persistentConnection: persistentConnection ?? this.persistentConnection,
-      userExtra: userExtra ?? this.userExtra,
+      customExtra: userExtra ?? this.customExtra,
     );
   }
 
@@ -106,15 +101,14 @@ class RequestOptionsModel {
   Options toDioOptions({String? method}) {
     return Options(
       method: method,
-      headers: headers,
+      headers: customHeaders,
       responseType: responseType,
-      validateStatus: validateStatus,
       receiveDataWhenStatusError: receiveDataWhenStatusError,
       followRedirects: followRedirects,
       maxRedirects: maxRedirects,
       persistentConnection: persistentConnection,
       extra: {
-        ...userExtra ?? {},
+        ...customExtra ?? {},
         'maxAttempts': effectiveRetryOptions.maxAttempts,
         'retryInterval': effectiveRetryOptions.retryInterval,
         'shouldCache': effectiveCacheOptions.shouldCache,
@@ -143,9 +137,8 @@ class RequestOptionsModel {
                 : RetryOptions.defaultOptions.retryInterval);
 
     return RequestOptionsModel(
-      headers: options.headers,
+      customHeaders: options.headers,
       responseType: options.responseType,
-      validateStatus: options.validateStatus,
       receiveDataWhenStatusError: options.receiveDataWhenStatusError,
       followRedirects: options.followRedirects,
       maxRedirects: options.maxRedirects,

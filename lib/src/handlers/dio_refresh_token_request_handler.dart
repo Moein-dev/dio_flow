@@ -17,7 +17,7 @@ class DioRefreshTokenRequestHandle {
     /// Prepare Header
     Map<String, dynamic> headers = await DioHndlerHelper.prepareHeaders(
       hasBearerToken: requestOptions.hasBearerToken,
-      additionalHeaders: requestOptions.headers ?? {},
+      additionalHeaders: requestOptions.customHeaders ?? {},
     );
 
     /// Provideded Uri
