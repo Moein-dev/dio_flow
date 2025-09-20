@@ -99,16 +99,18 @@ void main() {
       // This tests the fromDioOptions factory constructor
       final originalOptions = RequestOptionsModel(
         hasBearerToken: true,
-        shouldCache: false,
-        headers: {'Custom-Header': 'value'},
+        customHeaders: {'Custom-Header': 'value'},
       );
 
       final dioOptions = originalOptions.toDioOptions();
       final recreatedOptions = RequestOptionsModel.fromDioOptions(dioOptions);
 
-      expect(recreatedOptions.headers, equals({'Custom-Header': 'value'}));
+      expect(
+        recreatedOptions.customHeaders,
+        equals({'Custom-Header': 'value'}),
+      );
       // expect(recreatedOptions.requiresAuth, isTrue);
-      expect(recreatedOptions.retryCount, equals(3));
+      expect(recreatedOptions.retryOptions?.maxAttempts, equals(3));
     });
 
     test('should handle copyWith for file operations', () {
@@ -121,10 +123,10 @@ void main() {
 
       expect(fileUploadOptions.hasBearerToken, isTrue);
       expect(
-        fileUploadOptions.headers!['Content-Type'],
+        fileUploadOptions.customHeaders!['Content-Type'],
         equals('multipart/form-data'),
       );
-      expect(fileUploadOptions.shouldCache, equals(baseOptions.shouldCache));
+      // expect(fileUploadOptions.shouldCache, equals(baseOptions.shouldCache));
     });
   });
 

@@ -1,21 +1,11 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
-import 'package:dio_flow/src/base/api_client.dart';
-import 'package:dio_flow/src/base/api_endpoint_interface.dart';
-import 'package:dio_flow/src/base/endpoint_provider.dart';
-import 'package:dio_flow/src/models/request_options_model.dart';
-import 'package:dio_flow/src/models/response/error_type.dart';
-import 'package:dio_flow/src/models/response/response_model.dart';
-import 'package:dio_flow/src/models/retry_options.dart';
-import 'package:dio_flow/src/utils/http_methods.dart';
-import 'package:dio_flow/src/utils/token_manager.dart';
-import 'package:dio_flow/src/utils/mock_dio_flow.dart';
-import 'package:flutter/foundation.dart';
+import 'package:dio_flow/dio_flow.dart';
+import 'package:dio_flow/src/handlers/dio_flow_log.dart';
+import 'package:dio_flow/src/handlers/dio_hndler_helper.dart';
 
 class DioRequestHandler {
   DioRequestHandler._();
-
-
 
   static Future<ResponseModel> _executeRequest(
     dynamic endpoint, {
@@ -23,69 +13,102 @@ class DioRequestHandler {
     dynamic data,
     required RequestOptionsModel requestOptions,
     String? methodOverride,
+    CancelToken? cancelToken,
   }) async {
-   final RetryOptions retryOptions = RetryOptions(
-    maxAttempts: requestOptions.retryCount,
-    retryInterval: requestOptions.retryInterval,
-  );
-
+    // Handle Mock Data Process
     if (MockDioFlow.isMockEnabled) {
-      return _handleMockRequest(endpoint, methodOverride ?? HttpMethods.get);
-    }
-
-    final headers = await _prepareHeaders(
-      hasBearerToken: requestOptions.hasBearerToken,
-      additionalHeaders: requestOptions.headers ?? {},
-    );
-
-    String endpointPath;
-    if (endpoint is ApiEndpointInterface) {
-      endpointPath = endpoint.path;
-    } else if (endpoint is String) {
-      try {
-        endpointPath = EndpointProvider.instance.getEndpoint(endpoint).path;
-      } catch (e) {
-        endpointPath = endpoint;
-      }
-    } else {
-      throw ArgumentError(
-        'Endpoint must be an ApiEndpointInterface or a registered endpoint name',
+      return DioHndlerHelper.handleMockRequest(
+        endpoint,
+        methodOverride ?? HttpMethods.get,
       );
     }
 
+    final CancelToken internalCancelToken = cancelToken ?? CancelToken();
+
+    // Prepare Header
+    Map<String, dynamic> headers = await DioHndlerHelper.prepareHeaders(
+      hasBearerToken: requestOptions.hasBearerToken,
+      additionalHeaders: requestOptions.customHeaders ?? {},
+    );
+
+    // Provideded Uri
+    final endpointPath = DioHndlerHelper.endpointPath(endpoint);
+
+    // Provided Options With Extra
     final dioOptions = requestOptions.toDioOptions(method: methodOverride);
     dioOptions.headers = {...dioOptions.headers ?? {}, ...headers};
 
-    dioOptions.extra = {
-      ...dioOptions.extra ?? {},
-      'retryCount': retryOptions.maxAttempts,
-      'retryInterval': retryOptions.retryInterval.inMilliseconds,
+    // prepare extra
+    final Map<String, dynamic> baseExtra = {
+      ...(dioOptions.extra ?? {}),
       'isRetry': dioOptions.extra?['isRetry'] ?? false,
+      'retryCount': dioOptions.extra?['retryCount'] ?? 0,
+      'isTokenRefreshed': false,
     };
 
-    final CancelToken cancelToken = CancelToken();
+    final newOptions = dioOptions.copyWith(extra: baseExtra);
 
-    int maxAttempts = retryOptions.maxAttempts;
-    final Duration interval = retryOptions.retryInterval;
+    /// Create initial log curl
+    final firstCurl = DioHndlerHelper.curlCommand(
+      methodOverride: methodOverride!,
+      baseUrl: DioFlowConfig.instance.baseUrl + endpointPath,
+      endpointPath: endpointPath,
+      data: data,
+      parameters: parameters,
+      headers: headers,
+    );
 
+    final int maxAttempts = requestOptions.retryOptions.maxAttempts;
+    final Duration interval = requestOptions.retryOptions.retryInterval;
+
+    /// start loop
     for (int attempt = 0; attempt < maxAttempts; attempt++) {
-      dioOptions.extra = {
-        ...dioOptions.extra ?? {},
-        'isRetry': attempt > 0,
-        'retryCount': (maxAttempts - attempt),
-      };
+      final bool isLastAttempt = attempt == maxAttempts - 1;
+      final bool firstAttempts = attempt == 0;
 
+      final Map<String, dynamic> thisOptionExtra = {
+        ...(newOptions.extra ?? {}),
+        'isRetry': attempt > 0,
+        'retryCount': firstAttempts ? 0 : attempt,
+      };
+      var optionsThisAttempt = newOptions.copyWith(extra: thisOptionExtra);
+
+      /// Create log curl and Console Log for Request
+      final curlCommand = DioHndlerHelper.curlCommand(
+        methodOverride: methodOverride,
+        baseUrl: DioFlowConfig.instance.baseUrl + endpointPath,
+        endpointPath: endpointPath,
+        data: data,
+        parameters: parameters,
+        headers: headers,
+      );
+      final bool cacheLoad = requestOptions.cacheOptions.shouldCache;
+      if (firstAttempts) {
+        DioFlowLog(
+          type: DioLogType.request,
+          url: DioFlowConfig.instance.baseUrl + endpointPath,
+          method: newOptions.method,
+          data: data,
+          headers: Map<String, dynamic>.from(newOptions.headers ?? {}),
+          parameters: parameters,
+          extra: optionsThisAttempt.extra,
+          logCurl: curlCommand,
+          isCache: cacheLoad,
+        ).log();
+      }
+
+      /// Start the application process from DIO
       try {
         Response response;
-        final method = (methodOverride ?? HttpMethods.get).toUpperCase();
+        final method = (methodOverride).toUpperCase();
 
         switch (method) {
           case HttpMethods.get:
             response = await ApiClient.dio.get(
               endpointPath,
               queryParameters: parameters,
-              options: dioOptions,
-              cancelToken: cancelToken,
+              options: optionsThisAttempt,
+              cancelToken: internalCancelToken,
             );
             break;
           case HttpMethods.post:
@@ -93,8 +116,8 @@ class DioRequestHandler {
               endpointPath,
               queryParameters: parameters,
               data: data,
-              options: dioOptions,
-              cancelToken: cancelToken,
+              options: optionsThisAttempt,
+              cancelToken: internalCancelToken,
             );
             break;
           case HttpMethods.put:
@@ -102,8 +125,8 @@ class DioRequestHandler {
               endpointPath,
               queryParameters: parameters,
               data: data,
-              options: dioOptions,
-              cancelToken: cancelToken,
+              options: optionsThisAttempt,
+              cancelToken: internalCancelToken,
             );
             break;
           case HttpMethods.patch:
@@ -111,28 +134,30 @@ class DioRequestHandler {
               endpointPath,
               queryParameters: parameters,
               data: data,
-              options: dioOptions,
-              cancelToken: cancelToken,
+              options: optionsThisAttempt,
+              cancelToken: internalCancelToken,
             );
             break;
           case HttpMethods.delete:
             response = await ApiClient.dio.delete(
               endpointPath,
               queryParameters: parameters,
-              options: dioOptions,
-              cancelToken: cancelToken,
+              options: optionsThisAttempt,
+              cancelToken: internalCancelToken,
             );
             break;
           default:
             throw Exception('Unsupported HTTP method: ${dioOptions.method}');
         }
 
+        // --- normalize response data ---
         Map<String, dynamic> responseData;
         if (response.data is Map<String, dynamic>) {
           responseData = Map<String, dynamic>.from(response.data);
         } else if (response.data is List) {
           responseData = {'data': response.data, 'status': response.statusCode};
-        } else if (response.data is String && response.data.isNotEmpty) {
+        } else if (response.data is String &&
+            (response.data as String).isNotEmpty) {
           try {
             responseData = Map<String, dynamic>.from(jsonDecode(response.data));
           } catch (_) {
@@ -147,21 +172,14 @@ class DioRequestHandler {
           responseData = {'data': response.data, 'status': response.statusCode};
         }
 
+        responseData['extra'] = optionsThisAttempt.extra ?? {};
+
         if (!responseData.containsKey('status') &&
             !responseData.containsKey('statusCode')) {
           responseData['status'] = response.statusCode;
         }
 
-        final logCurlFromResponse = response.extra['log_curl'];
-        final logCurlFromRequest = response.requestOptions.extra['log_curl'];
-        if (kDebugMode) {
-          if (logCurlFromResponse != null) {
-            responseData['log_curl'] = logCurlFromResponse;
-          } else if (logCurlFromRequest != null) {
-            responseData['log_curl'] = logCurlFromRequest;
-          }
-        }
-
+        // headers
         if (response.headers.map.isNotEmpty) {
           final relevantHeaders = <String, dynamic>{};
           for (final h in [
@@ -181,33 +199,92 @@ class DioRequestHandler {
         }
 
         final statusCode = response.statusCode ?? 500;
-        if (statusCode >= 200 && statusCode < 300) {
-          return SuccessResponseModel.fromJson(responseData);
-        } else {
-          return FailedResponseModel.fromJson(responseData);
-        }
-      } on DioException catch (error, stackTrace) {
-        final isLast = attempt == maxAttempts - 1;
+        final fromCache = response.extra['fromCache'] ?? false;
 
-        String logCurl = 'No log available';
-        if (kDebugMode) {
+        /// Create log curl and Console Log for Response
+        final responseCurlCommand = DioHndlerHelper.curlCommand(
+          methodOverride: methodOverride,
+          baseUrl: DioFlowConfig.instance.baseUrl,
+          endpointPath: endpointPath,
+          data: data,
+          parameters: parameters,
+          headers: headers,
+        );
+
+        /// 401 handle
+        if (statusCode == 401 &&
+            (optionsThisAttempt.extra?['isTokenRefreshed'] ?? false) != true) {
           try {
-            logCurl =
-                dioOptions.extra?['log_curl'] ??
-                error.requestOptions.extra['log_curl'] ??
-                error.response?.extra['log_curl'] ??
-                'No log available';
+            await TokenManager.refreshAccessToken();
           } catch (_) {}
-        }
 
-        final statusCode = error.response?.statusCode;
-        if (statusCode != 401 && !isLast) {
-          if (interval.inMilliseconds > 0) {
-            await Future.delayed(interval);
+          final newToken = await TokenManager.getAccessToken();
+
+          if (newToken != null && newToken.isNotEmpty) {
+            optionsThisAttempt = optionsThisAttempt.copyWith(
+              headers: {
+                ...?optionsThisAttempt.headers,
+                'Authorization': 'Bearer $newToken',
+              },
+              extra: {...?optionsThisAttempt.extra, 'isTokenRefreshed': true},
+            );
+
+            attempt = -1;
+            continue;
+          } else {
+            return FailedResponseModel.fromJson(
+              responseData,
+              endpointPath: endpointPath,
+              logCurl: responseCurlCommand,
+              fromCache: fromCache,
+            );
           }
-          continue;
         }
 
+        /// return
+        if (statusCode >= 200 && statusCode < 300) {
+          return SuccessResponseModel.fromJson(
+            responseData,
+            endpointPath: endpointPath,
+            logCurl: responseCurlCommand,
+            fromCache: fromCache,
+          );
+        } else {
+          if (!isLastAttempt &&
+              DioHndlerHelper.shouldRetry(
+                requestOptions.retryOptions,
+                statusCode,
+                null,
+              )) {
+            /// Create Console Log For this Atetempts
+            if (!firstAttempts) {
+              DioFlowLog(
+                type: DioLogType.retry,
+                url: DioFlowConfig.instance.baseUrl + endpointPath,
+                method: newOptions.method,
+                headers: Map<String, dynamic>.from(newOptions.headers ?? {}),
+                parameters: parameters,
+                extra: optionsThisAttempt.extra,
+                logCurl: curlCommand,
+                retryCount: attempt,
+                maxAttempts: maxAttempts,
+                statusCode: statusCode,
+                message: response.statusMessage,
+              ).log();
+            }
+            await Future.delayed(interval);
+            continue;
+          } else {
+            return FailedResponseModel.fromJson(
+              responseData,
+              endpointPath: endpointPath,
+              logCurl: responseCurlCommand,
+              fromCache: fromCache,
+            );
+          }
+        }
+      } on DioException catch (error) {
+        // determine user-friendly error type (if you need it)
         ErrorType errorType;
         if (error.requestOptions.extra['errorType'] == 'preparation_error') {
           errorType = ErrorType.validation;
@@ -219,27 +296,111 @@ class DioRequestHandler {
           errorType = ErrorType.fromDioErrorType(error.type);
         }
 
-        final bool isRetry = attempt > 0;
+        // prepare errorResponseData safely (guard for nulls)
+        Map<String, dynamic> errorResponseData;
+        if (error.response?.data is Map<String, dynamic>) {
+          errorResponseData = Map<String, dynamic>.from(error.response!.data);
+        } else if (error.response?.data is List) {
+          errorResponseData = {
+            'data': error.response!.data,
+            'status': error.response!.statusCode,
+          };
+        } else if (error.response?.data is String &&
+            (error.response!.data as String).isNotEmpty) {
+          try {
+            errorResponseData = Map<String, dynamic>.from(
+              jsonDecode(error.response!.data),
+            );
+          } catch (_) {
+            errorResponseData = {
+              'data': error.response!.data,
+              'status': error.response!.statusCode,
+            };
+          }
+        } else {
+          errorResponseData = {
+            'errorType': errorType.userFriendlyMessage,
+            'message': error.message ?? 'Request failed',
+          };
+        }
 
-        return FailedResponseModel(
-          statusCode: error.response?.statusCode ?? 500,
-          message:
-              isRetry
-                  ? 'Request failed after ${attempt + 1} attempts: ${error.message}'
-                  : error.message ?? 'Request failed',
-          logCurl: logCurl,
-          stackTrace: stackTrace,
-          error: error,
-          errorType: errorType,
+        if (!errorResponseData.containsKey('status') &&
+            !errorResponseData.containsKey('statusCode')) {
+          errorResponseData['status'] = error.response?.statusCode ?? 500;
+        }
+
+        errorResponseData['extra'] = optionsThisAttempt.extra ?? {};
+
+        // Add relevant headers only if present
+        if (error.response?.headers != null &&
+            error.response!.headers.map.isNotEmpty) {
+          final relevantHeaders = <String, dynamic>{};
+          for (final h in [
+            'content-type',
+            'authorization',
+            'x-total-count',
+            'x-pagination-total',
+            'x-total-pages',
+          ]) {
+            if (error.response!.headers.map.containsKey(h)) {
+              relevantHeaders[h] = error.response!.headers.value(h);
+            }
+          }
+          if (relevantHeaders.isNotEmpty) {
+            errorResponseData['headers'] = relevantHeaders;
+          }
+        }
+
+        /// Create log curl and Console Log for Exeptions
+        final exeptionCurlCommand = DioHndlerHelper.curlCommand(
+          methodOverride: methodOverride,
+          baseUrl: DioFlowConfig.instance.baseUrl,
+          endpointPath: endpointPath,
+          data: data,
+          parameters: parameters,
+          headers: headers,
         );
-      }
-    }
 
-    return FailedResponseModel(
-      statusCode: 500,
-      message: 'Unknown error after retries',
-      logCurl: kDebugMode ? (dioOptions.extra?['log_curl'] ?? 'No log available') : 'No log available',
-      errorType: ErrorType.unknown,
+        // if cancell request
+        if (error.type == DioExceptionType.cancel) {
+          return FailedResponseModel.fromJson(
+            {'status': 499, 'message': 'Request cancelled by user'},
+            endpointPath: endpointPath,
+            logCurl: exeptionCurlCommand,
+          );
+        }
+
+        if (!isLastAttempt && DioHndlerHelper.shouldRetry(null, null, error)) {
+          /// Create Console Log For this Atetempts
+          DioFlowLog(
+            type: DioLogType.retry,
+            url: DioFlowConfig.instance.baseUrl + endpointPath,
+            method: newOptions.method,
+            data: data,
+            headers: Map<String, dynamic>.from(newOptions.headers ?? {}),
+            parameters: parameters,
+            extra: optionsThisAttempt.extra,
+            logCurl: curlCommand,
+            isCache: cacheLoad,
+            retryCount: attempt,
+            maxAttempts: maxAttempts,
+          ).log();
+          await Future.delayed(interval);
+          continue; // retry
+        } else {
+          return FailedResponseModel.fromJson(
+            errorResponseData,
+            endpointPath: endpointPath,
+            logCurl: exeptionCurlCommand,
+          );
+        }
+      } // end catch
+    } // end for
+
+    return FailedResponseModel.fromJson(
+      {'status': 500, 'message': 'Request aborted after retries'},
+      endpointPath: endpointPath,
+      logCurl: firstCurl,
     );
   }
 
@@ -248,6 +409,7 @@ class DioRequestHandler {
     Map<String, dynamic>? parameters,
     dynamic data,
     RequestOptionsModel requestOptions = const RequestOptionsModel(),
+    CancelToken? cancelToken,
   }) async {
     return _executeRequest(
       endpoint,
@@ -255,6 +417,7 @@ class DioRequestHandler {
       data: data,
       requestOptions: requestOptions,
       methodOverride: HttpMethods.get,
+      cancelToken: cancelToken,
     );
   }
 
@@ -263,6 +426,7 @@ class DioRequestHandler {
     Map<String, dynamic>? parameters,
     dynamic data,
     RequestOptionsModel requestOptions = const RequestOptionsModel(),
+    CancelToken? cancelToken,
   }) async {
     return _executeRequest(
       endpoint,
@@ -270,6 +434,7 @@ class DioRequestHandler {
       data: data,
       requestOptions: requestOptions,
       methodOverride: HttpMethods.post,
+      cancelToken: cancelToken,
     );
   }
 
@@ -278,6 +443,7 @@ class DioRequestHandler {
     Map<String, dynamic>? parameters,
     dynamic data,
     RequestOptionsModel requestOptions = const RequestOptionsModel(),
+    CancelToken? cancelToken,
   }) async {
     return _executeRequest(
       endpoint,
@@ -285,6 +451,7 @@ class DioRequestHandler {
       data: data,
       requestOptions: requestOptions,
       methodOverride: HttpMethods.put,
+      cancelToken: cancelToken,
     );
   }
 
@@ -293,6 +460,7 @@ class DioRequestHandler {
     Map<String, dynamic>? parameters,
     dynamic data,
     RequestOptionsModel requestOptions = const RequestOptionsModel(),
+    CancelToken? cancelToken,
   }) async {
     return _executeRequest(
       endpoint,
@@ -300,6 +468,7 @@ class DioRequestHandler {
       data: data,
       requestOptions: requestOptions,
       methodOverride: HttpMethods.patch,
+      cancelToken: cancelToken,
     );
   }
 
@@ -307,56 +476,14 @@ class DioRequestHandler {
     dynamic endpoint, {
     Map<String, dynamic>? parameters,
     RequestOptionsModel requestOptions = const RequestOptionsModel(),
+    CancelToken? cancelToken,
   }) async {
     return _executeRequest(
       endpoint,
       parameters: parameters,
       requestOptions: requestOptions,
       methodOverride: HttpMethods.delete,
+      cancelToken: cancelToken,
     );
-  }
-
-  static Future<Map<String, dynamic>> _prepareHeaders({
-    bool hasBearerToken = false,
-    Map<String, dynamic> additionalHeaders = const {},
-  }) async {
-    final Map<String, dynamic> headers = {...additionalHeaders};
-    if (hasBearerToken) {
-      final token = await TokenManager.getAccessToken();
-      if (token != null && token.isNotEmpty) {
-        headers['Authorization'] = 'Bearer $token';
-      }
-    }
-    return headers;
-  }
-
-  static Future<ResponseModel> _handleMockRequest(
-    dynamic endpoint,
-    String method,
-  ) async {
-    String endpointPath;
-    if (endpoint is ApiEndpointInterface) {
-      endpointPath = endpoint.path;
-    } else if (endpoint is String) {
-      try {
-        endpointPath = EndpointProvider.instance.getEndpoint(endpoint).path;
-      } catch (e) {
-        endpointPath = endpoint;
-      }
-    } else {
-      endpointPath = endpoint.toString();
-    }
-
-    final mockResponse = MockDioFlow.getMockResponse(endpointPath, method);
-    if (mockResponse == null) {
-      return FailedResponseModel(
-        statusCode: 404,
-        message: 'No mock response registered for $method $endpointPath',
-        logCurl: 'MOCK REQUEST - NO RESPONSE REGISTERED',
-        errorType: ErrorType.notFound,
-      );
-    }
-    await mockResponse.simulateDelay();
-    return MockDioFlow.convertToResponseModel(mockResponse);
   }
 }

@@ -85,3 +85,17 @@ class DioFlowConfig {
     _instance = null;
   }
 }
+
+
+String removeAfterThirdSlash(String url) {
+  int slashCount = 0;
+  for (int i = 0; i < url.length; i++) {
+    if (url.codeUnitAt(i) == '/'.codeUnitAt(0)) {
+      slashCount++;
+      if (slashCount == 3) {
+        return url.substring(0, i);
+      }
+    }
+  }
+  return url; 
+}

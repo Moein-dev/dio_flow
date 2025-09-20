@@ -1,6 +1,5 @@
 import 'dart:async';
-import 'package:dio_flow/src/models/api_exception.dart';
-import 'package:dio_flow/src/models/response/refresh_token_response.dart';
+import 'package:dio_flow/dio_flow.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 typedef RefreshTokenHandler =
@@ -50,7 +49,7 @@ class TokenManager {
 
     if (!_isTokenExpired()) return true;
 
-    if (_refreshHandler == null) return false;
+    if (_refreshHandler == null || _refreshToken == null) return false;
 
     try {
       await refreshAccessToken();
@@ -61,20 +60,28 @@ class TokenManager {
   }
 
   static Future<String?> getAccessToken() async {
-    if (_accessToken != null && !_isTokenExpired()) {
-      return _accessToken;
+    if (_accessToken != null) {
+      if (!_isTokenExpired()) {
+        return _accessToken;
+      } else {
+        if (_refreshHandler == null || _refreshToken == null) {
+          return null;
+        } else {
+          try {
+            await refreshAccessToken();
+            return _accessToken;
+          } catch (_) {
+            return null;
+          }
+        }
+      }
     }
 
-    if (_refreshHandler == null) {
-      return null;
-    }
-
-    await refreshAccessToken();
-    return _accessToken;
+    return null;
   }
 
   static bool _isTokenExpired() {
-    return _tokenExpiry?.isBefore(DateTime.now()) ?? true;
+    return _tokenExpiry?.isBefore(DateTime.now()) ?? false;
   }
 
   static Future<void> refreshAccessToken() async {
@@ -96,13 +103,13 @@ class TokenManager {
     try {
       final RefreshTokenResponse res = await _refreshHandler!(_refreshToken!);
 
-      if (res.accessToken.isEmpty || res.refreshToken.isEmpty) {
+      if (res.accessToken.isEmpty) {
         throw ApiException('Refresh handler returned invalid tokens');
       }
 
       await setTokens(
         accessToken: res.accessToken,
-        refreshToken: res.refreshToken,
+        refreshToken: res.refreshToken ?? _refreshToken!,
         expiry: res.expiry,
       );
 

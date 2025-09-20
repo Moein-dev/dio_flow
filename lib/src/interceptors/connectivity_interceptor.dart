@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:dio_flow/dio_flow.dart';
 import 'package:dio_flow/src/utils/network_checker.dart';
 
 /// Interceptor that checks for internet connectivity before making API requests.
@@ -25,18 +26,16 @@ class ConnectivityInterceptor extends Interceptor {
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
-    // Only check connectivity for initial requests, not retries
-    if (!options.extra.containsKey('isRetry')) {
-      if (!await NetworkChecker.hasConnection()) {
-        return handler.reject(
-          DioException(
-            requestOptions: options,
-            type: DioExceptionType.connectionError,
-            message: 'No internet connection',
-          ),
-        );
-      }
+    if (!await NetworkChecker.hasConnection()) {
+      return handler.reject(
+        DioException(
+          requestOptions: options,
+          type: DioExceptionType.connectionError,
+          message: 'No internet connection',
+        ),
+      );
+    } else {
+      return handler.next(options);
     }
-    return handler.next(options);
   }
 }

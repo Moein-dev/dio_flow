@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:dio_flow/src/models/cache_options_model.dart';
 import 'package:dio_flow/src/models/retry_options.dart';
 
 /// Model class for configuring request options.
@@ -8,26 +9,20 @@ import 'package:dio_flow/src/models/retry_options.dart';
 class RequestOptionsModel {
   final bool hasBearerToken;
 
-  /// Whether to cache the response.
-  final bool shouldCache;
-
-  /// How long to cache the response.
-  final Duration cacheDuration;
+  /// for cache settings handled
+  final CacheOptions cacheOptions;
 
   /// Configuration for request retries.
-  final RetryOptions? retryOptions;
+  final RetryOptions retryOptions;
+
+  /// user extra
+  final Map<String, dynamic>? customExtra;
 
   /// Custom headers to include in the request.
-  final Map<String, dynamic>? headers;
-
-  /// Extra parameters for the request.
-  final Map<String, dynamic>? extra;
+  final Map<String, dynamic>? customHeaders;
 
   /// The response type (e.g., json, stream, plain, bytes).
   final ResponseType? responseType;
-
-  /// Custom status code validator.
-  final ValidateStatus? validateStatus;
 
   /// Whether to receive data when status code indicates error.
   final bool? receiveDataWhenStatusError;
@@ -41,12 +36,6 @@ class RequestOptionsModel {
   /// Whether to use persistent connection.
   final bool? persistentConnection;
 
-  /// Number of times to retry the request on failure.
-  final int retryCount;
-
-  /// Interval between retries.
-  final Duration retryInterval;
-
   /// Creates a new request options model with the specified configuration.
   ///
   /// Most parameters are optional and have sensible defaults:
@@ -58,53 +47,47 @@ class RequestOptionsModel {
   /// - [retryInterval] defaults to 1 second
   const RequestOptionsModel({
     this.hasBearerToken = false,
-    this.shouldCache = false,
-    this.cacheDuration = const Duration(minutes: 5),
-    this.retryOptions,
-    this.headers,
-    this.extra,
+    this.cacheOptions = CacheOptions.defaultOptions,
+    this.retryOptions = RetryOptions.defaultOptions,
+    this.customHeaders,
     this.responseType,
-    this.validateStatus,
     this.receiveDataWhenStatusError,
     this.followRedirects,
     this.maxRedirects,
     this.persistentConnection,
-    this.retryCount = 3,
-    this.retryInterval = const Duration(seconds: 1),
+    this.customExtra,
   });
+
+  RetryOptions get effectiveRetryOptions => retryOptions;
+
+  CacheOptions get effectiveCacheOptions => cacheOptions;
 
   /// Creates a copy of this RequestOptionsModel with the specified fields replaced with new values.
   RequestOptionsModel copyWith({
     bool? hasBearerToken,
-    bool? shouldCache,
-    Duration? cacheDuration,
     RetryOptions? retryOptions,
+    CacheOptions? cacheOptions,
     Map<String, dynamic>? headers,
-    Map<String, dynamic>? extra,
     ResponseType? responseType,
     ValidateStatus? validateStatus,
     bool? receiveDataWhenStatusError,
     bool? followRedirects,
     int? maxRedirects,
     bool? persistentConnection,
-    int? retryCount,
-    Duration? retryInterval,
+    Map<String, dynamic>? userExtra,
   }) {
     return RequestOptionsModel(
-      shouldCache: shouldCache ?? this.shouldCache,
-      cacheDuration: cacheDuration ?? this.cacheDuration,
+      hasBearerToken: hasBearerToken ?? this.hasBearerToken,
       retryOptions: retryOptions ?? this.retryOptions,
-      headers: headers ?? this.headers,
-      extra: extra ?? this.extra,
+      cacheOptions: cacheOptions ?? this.cacheOptions,
+      customHeaders: headers ?? this.customHeaders,
       responseType: responseType ?? this.responseType,
-      validateStatus: validateStatus ?? this.validateStatus,
       receiveDataWhenStatusError:
           receiveDataWhenStatusError ?? this.receiveDataWhenStatusError,
       followRedirects: followRedirects ?? this.followRedirects,
       maxRedirects: maxRedirects ?? this.maxRedirects,
       persistentConnection: persistentConnection ?? this.persistentConnection,
-      retryCount: retryCount ?? this.retryCount,
-      retryInterval: retryInterval ?? this.retryInterval,
+      customExtra: userExtra ?? this.customExtra,
     );
   }
 
@@ -118,45 +101,21 @@ class RequestOptionsModel {
   Options toDioOptions({String? method}) {
     return Options(
       method: method,
-      headers: headers,
+      headers: customHeaders,
       responseType: responseType,
-      validateStatus: validateStatus,
       receiveDataWhenStatusError: receiveDataWhenStatusError,
       followRedirects: followRedirects,
       maxRedirects: maxRedirects,
       persistentConnection: persistentConnection,
       extra: {
-        ...?extra,
-        'retryCount': retryCount,
-        'retryInterval': retryInterval,
+        ...customExtra ?? {},
+        'maxAttempts': effectiveRetryOptions.maxAttempts,
+        'retryInterval': effectiveRetryOptions.retryInterval,
+        'shouldCache': effectiveCacheOptions.shouldCache,
+        'cacheDuration': effectiveCacheOptions.cacheDuration,
       },
     );
   }
-
-  /// Predefined options for requests that should never be cached.
-  static const RequestOptionsModel noApiCache = RequestOptionsModel(
-    shouldCache: false,
-  );
-
-  /// Predefined options for requests with a short cache duration (1 minute).
-  static const RequestOptionsModel shortApiCache = RequestOptionsModel(
-    cacheDuration: Duration(minutes: 1),
-  );
-
-  /// Predefined options for requests with a medium cache duration (15 minutes).
-  static const RequestOptionsModel mediumApiCache = RequestOptionsModel(
-    cacheDuration: Duration(minutes: 15),
-  );
-
-  /// Predefined options for requests with a long cache duration (1 hour).
-  static const RequestOptionsModel longApiCache = RequestOptionsModel(
-    cacheDuration: Duration(hours: 1),
-  );
-
-  /// Predefined options for requests that require authentication.
-  static const RequestOptionsModel authenticated = RequestOptionsModel(
-    hasBearerToken: true,
-  );
 
   /// Creates a RequestOptionsModel from Dio Options.
   ///
@@ -165,18 +124,34 @@ class RequestOptionsModel {
   factory RequestOptionsModel.fromDioOptions(Options options) {
     final extra = options.extra ?? <String, dynamic>{};
 
+    final int retryCountFromExtra =
+        extra['retryCount'] is int
+            ? extra['retryCount'] as int
+            : RetryOptions.defaultOptions.maxAttempts;
+    final dynamic rawInterval = extra['retryInterval'];
+    final Duration retryIntervalFromExtra =
+        rawInterval is int
+            ? Duration(milliseconds: rawInterval)
+            : (rawInterval is Duration
+                ? rawInterval
+                : RetryOptions.defaultOptions.retryInterval);
+
     return RequestOptionsModel(
-      headers: options.headers,
+      customHeaders: options.headers,
       responseType: options.responseType,
-      validateStatus: options.validateStatus,
       receiveDataWhenStatusError: options.receiveDataWhenStatusError,
       followRedirects: options.followRedirects,
       maxRedirects: options.maxRedirects,
       persistentConnection: options.persistentConnection,
-      extra: extra,
-      retryCount: extra['retryCount'] as int? ?? 3,
-      retryInterval:
-          extra['retryInterval'] as Duration? ?? const Duration(seconds: 1),
+      retryOptions: RetryOptions(
+        maxAttempts: retryCountFromExtra,
+        retryInterval: retryIntervalFromExtra,
+        retryStatusCodes: RetryOptions.defaultOptions.retryStatusCodes,
+        retryOnConnectionTimeout:
+            RetryOptions.defaultOptions.retryOnConnectionTimeout,
+        retryOnReceiveTimeout:
+            RetryOptions.defaultOptions.retryOnReceiveTimeout,
+      ),
     );
   }
 }
