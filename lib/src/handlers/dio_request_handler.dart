@@ -10,6 +10,7 @@ class DioRequestHandler {
   static Future<ResponseModel> _executeRequest(
     dynamic endpoint, {
     Map<String, dynamic>? parameters,
+    Map<String, dynamic>? pathParameters,
     dynamic data,
     required RequestOptionsModel requestOptions,
     String? methodOverride,
@@ -31,8 +32,14 @@ class DioRequestHandler {
       additionalHeaders: requestOptions.customHeaders ?? {},
     );
 
-    // Provideded Uri
-    final endpointPath = DioHndlerHelper.endpointPath(endpoint);
+    // Provideded Uri template (may contain placeholders)
+    final endpointTemplate = DioHndlerHelper.endpointPath(endpoint);
+
+    // Resolve pathParameters into template -> endpointPath
+    final endpointPath = DioHndlerHelper.resolvePath(
+      endpointTemplate,
+      pathParameters,
+    );
 
     // Provided Options With Extra
     final dioOptions = requestOptions.toDioOptions(method: methodOverride);
@@ -46,7 +53,7 @@ class DioRequestHandler {
       'isTokenRefreshed': false,
     };
 
-    final newOptions = dioOptions.copyWith(extra: baseExtra);
+    var newOptions = dioOptions.copyWith(extra: baseExtra);
 
     /// Create initial log curl
     final firstCurl = DioHndlerHelper.curlCommand(
@@ -76,7 +83,7 @@ class DioRequestHandler {
       /// Create log curl and Console Log for Request
       final curlCommand = DioHndlerHelper.curlCommand(
         methodOverride: methodOverride,
-        baseUrl: DioFlowConfig.instance.baseUrl + endpointPath,
+        baseUrl: DioFlowConfig.instance.baseUrl,
         endpointPath: endpointPath,
         data: data,
         parameters: parameters,
@@ -213,7 +220,7 @@ class DioRequestHandler {
 
         /// 401 handle
         if (statusCode == 401 &&
-            (optionsThisAttempt.extra?['isTokenRefreshed'] ?? false) != true) {
+            (optionsThisAttempt.extra?['isTokenRefreshed'] ?? false) != true && requestOptions.hasBearerToken) {
           try {
             await TokenManager.refreshAccessToken();
           } catch (_) {}
@@ -221,7 +228,7 @@ class DioRequestHandler {
           final newToken = await TokenManager.getAccessToken();
 
           if (newToken != null && newToken.isNotEmpty) {
-            optionsThisAttempt = optionsThisAttempt.copyWith(
+            newOptions = newOptions.copyWith(
               headers: {
                 ...?optionsThisAttempt.headers,
                 'Authorization': 'Bearer $newToken',
@@ -407,6 +414,7 @@ class DioRequestHandler {
   static Future<ResponseModel> get(
     dynamic endpoint, {
     Map<String, dynamic>? parameters,
+    Map<String, dynamic>? pathParameters, // <-- added
     dynamic data,
     RequestOptionsModel requestOptions = const RequestOptionsModel(),
     CancelToken? cancelToken,
@@ -414,6 +422,7 @@ class DioRequestHandler {
     return _executeRequest(
       endpoint,
       parameters: parameters,
+      pathParameters: pathParameters,
       data: data,
       requestOptions: requestOptions,
       methodOverride: HttpMethods.get,
@@ -424,6 +433,7 @@ class DioRequestHandler {
   static Future<ResponseModel> post(
     dynamic endpoint, {
     Map<String, dynamic>? parameters,
+    Map<String, dynamic>? pathParameters, // <-- added
     dynamic data,
     RequestOptionsModel requestOptions = const RequestOptionsModel(),
     CancelToken? cancelToken,
@@ -431,6 +441,7 @@ class DioRequestHandler {
     return _executeRequest(
       endpoint,
       parameters: parameters,
+      pathParameters: pathParameters,
       data: data,
       requestOptions: requestOptions,
       methodOverride: HttpMethods.post,
@@ -441,6 +452,7 @@ class DioRequestHandler {
   static Future<ResponseModel> put(
     dynamic endpoint, {
     Map<String, dynamic>? parameters,
+    Map<String, dynamic>? pathParameters, // <-- added
     dynamic data,
     RequestOptionsModel requestOptions = const RequestOptionsModel(),
     CancelToken? cancelToken,
@@ -448,6 +460,7 @@ class DioRequestHandler {
     return _executeRequest(
       endpoint,
       parameters: parameters,
+      pathParameters: pathParameters,
       data: data,
       requestOptions: requestOptions,
       methodOverride: HttpMethods.put,
@@ -458,6 +471,7 @@ class DioRequestHandler {
   static Future<ResponseModel> patch(
     dynamic endpoint, {
     Map<String, dynamic>? parameters,
+    Map<String, dynamic>? pathParameters, // <-- added
     dynamic data,
     RequestOptionsModel requestOptions = const RequestOptionsModel(),
     CancelToken? cancelToken,
@@ -465,6 +479,7 @@ class DioRequestHandler {
     return _executeRequest(
       endpoint,
       parameters: parameters,
+      pathParameters: pathParameters,
       data: data,
       requestOptions: requestOptions,
       methodOverride: HttpMethods.patch,
@@ -475,12 +490,14 @@ class DioRequestHandler {
   static Future<ResponseModel> delete(
     dynamic endpoint, {
     Map<String, dynamic>? parameters,
+    Map<String, dynamic>? pathParameters, // <-- added
     RequestOptionsModel requestOptions = const RequestOptionsModel(),
     CancelToken? cancelToken,
   }) async {
     return _executeRequest(
       endpoint,
       parameters: parameters,
+      pathParameters: pathParameters,
       requestOptions: requestOptions,
       methodOverride: HttpMethods.delete,
       cancelToken: cancelToken,
