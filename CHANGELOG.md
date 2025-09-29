@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] - 2025-09-20
+
+### 🔧 Bug Fixes
+
+- Fixed a bug in pathParameters
+- Fixed Refresh token loop bug
+
 ## [2.0.0] - 2025-09-20
 
 ### 📚 Documentation
@@ -18,11 +25,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - improved caching process
 - improved Token Manager process
 
-
 ### Features Added
 
 - Add cancell token handler
-- Add a new handler for refresh token 
+- Add a new handler for refresh token
 - Add customized console logs for each process in debug mode
 
 ## [1.3.3] - 2025-09-10

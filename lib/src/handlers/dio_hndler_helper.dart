@@ -92,6 +92,25 @@ class DioHndlerHelper {
     }
   }
 
+  /// Resolve placeholders like /users/{id}/posts/{postId}
+  /// using provided pathParameters map.
+  /// Values are encoded with Uri.encodeComponent.
+  static String resolvePath(
+    String template,
+    Map<String, dynamic>? pathParameters,
+  ) {
+    if (pathParameters == null || pathParameters.isEmpty) {
+      return template;
+    }
+    var resolved = template;
+    pathParameters.forEach((key, value) {
+      final replacement =
+          value == null ? '' : Uri.encodeComponent(value.toString());
+      resolved = resolved.replaceAll('{$key}', replacement);
+    });
+    return resolved;
+  }
+
   static String curlCommand({
     required String methodOverride,
     required String baseUrl,
