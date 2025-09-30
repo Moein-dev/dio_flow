@@ -101,7 +101,7 @@ Dio Flow transforms your API integration experience by providing enterprise-grad
 
 ```yaml
 dependencies:
-  dio_flow: ^2.0.0
+  dio_flow: ^2.0.1
 ```
 
 ### 🔄 Install
@@ -122,7 +122,7 @@ For enhanced development experience:
 
 ```yaml
 dev_dependencies:
-  dio_flow: ^2.0.0
+  dio_flow: ^2.0.1
   # For testing with mocks
   mockito: ^5.4.0
   # For integration testing
