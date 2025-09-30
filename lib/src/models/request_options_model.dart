@@ -80,14 +80,14 @@ class RequestOptionsModel {
       hasBearerToken: hasBearerToken ?? this.hasBearerToken,
       retryOptions: retryOptions ?? this.retryOptions,
       cacheOptions: cacheOptions ?? this.cacheOptions,
-      customHeaders: headers ?? this.customHeaders,
+      customHeaders: headers ?? customHeaders,
       responseType: responseType ?? this.responseType,
       receiveDataWhenStatusError:
           receiveDataWhenStatusError ?? this.receiveDataWhenStatusError,
       followRedirects: followRedirects ?? this.followRedirects,
       maxRedirects: maxRedirects ?? this.maxRedirects,
       persistentConnection: persistentConnection ?? this.persistentConnection,
-      customExtra: userExtra ?? this.customExtra,
+      customExtra: userExtra ?? customExtra,
     );
   }
 

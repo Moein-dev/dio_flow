@@ -51,7 +51,6 @@ class FailedResponseModel extends ResponseModel {
     bool fromCache = false,
     bool isRefreshHandle = false,
   }) {
-    ;
 
     // Extract the status code or default to 400 (Bad Request)
     final statusCode =

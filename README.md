@@ -470,15 +470,15 @@ final customRetryResponse = await DioRequestHandler.get(
 );
 ```
 
-### Cancell Request
+### Cancel Request
 
 ```dart
-// Use canceel token for Cancell Request every time
-final CancelToken testCancellToken = CancelToken();
+// Use cancel token for Cancel Request every time
+final CancelToken testCancelToken = CancelToken();
 
 final response = await DioRequestHandler.get(
   'test-endpoint',
-  ccancelToken: testCancelToken,
+  cancelToken: testCancelToken,
 );
 
 // For use :

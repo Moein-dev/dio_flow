@@ -110,7 +110,7 @@ void main() {
         equals({'Custom-Header': 'value'}),
       );
       // expect(recreatedOptions.requiresAuth, isTrue);
-      expect(recreatedOptions.retryOptions?.maxAttempts, equals(3));
+      expect(recreatedOptions.retryOptions.maxAttempts, equals(3));
     });
 
     test('should handle copyWith for file operations', () {
