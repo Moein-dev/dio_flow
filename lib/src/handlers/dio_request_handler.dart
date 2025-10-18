@@ -30,6 +30,7 @@ class DioRequestHandler {
     Map<String, dynamic> headers = await DioHndlerHelper.prepareHeaders(
       hasBearerToken: requestOptions.hasBearerToken,
       additionalHeaders: requestOptions.customHeaders ?? {},
+      isdataFile: data is FormData ? true : false,
     );
 
     // Provideded Uri template (may contain placeholders)
@@ -414,7 +415,7 @@ class DioRequestHandler {
   static Future<ResponseModel> get(
     dynamic endpoint, {
     Map<String, dynamic>? parameters,
-    Map<String, dynamic>? pathParameters, // <-- added
+    Map<String, dynamic>? pathParameters,
     dynamic data,
     RequestOptionsModel requestOptions = const RequestOptionsModel(),
     CancelToken? cancelToken,
@@ -433,7 +434,7 @@ class DioRequestHandler {
   static Future<ResponseModel> post(
     dynamic endpoint, {
     Map<String, dynamic>? parameters,
-    Map<String, dynamic>? pathParameters, // <-- added
+    Map<String, dynamic>? pathParameters,
     dynamic data,
     RequestOptionsModel requestOptions = const RequestOptionsModel(),
     CancelToken? cancelToken,
@@ -452,7 +453,7 @@ class DioRequestHandler {
   static Future<ResponseModel> put(
     dynamic endpoint, {
     Map<String, dynamic>? parameters,
-    Map<String, dynamic>? pathParameters, // <-- added
+    Map<String, dynamic>? pathParameters,
     dynamic data,
     RequestOptionsModel requestOptions = const RequestOptionsModel(),
     CancelToken? cancelToken,
@@ -471,7 +472,7 @@ class DioRequestHandler {
   static Future<ResponseModel> patch(
     dynamic endpoint, {
     Map<String, dynamic>? parameters,
-    Map<String, dynamic>? pathParameters, // <-- added
+    Map<String, dynamic>? pathParameters,
     dynamic data,
     RequestOptionsModel requestOptions = const RequestOptionsModel(),
     CancelToken? cancelToken,
@@ -490,7 +491,7 @@ class DioRequestHandler {
   static Future<ResponseModel> delete(
     dynamic endpoint, {
     Map<String, dynamic>? parameters,
-    Map<String, dynamic>? pathParameters, // <-- added
+    Map<String, dynamic>? pathParameters,
     RequestOptionsModel requestOptions = const RequestOptionsModel(),
     CancelToken? cancelToken,
   }) async {

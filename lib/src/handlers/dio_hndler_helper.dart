@@ -10,9 +10,12 @@ class DioHndlerHelper {
   static Future<Map<String, dynamic>> prepareHeaders({
     bool hasBearerToken = false,
     Map<String, dynamic> additionalHeaders = const {},
+    bool isdataFile = false,
   }) async {
     final Map<String, dynamic> headers = {...additionalHeaders};
-    headers.putIfAbsent("Content-Type", () => "application/json");
+    if (!isdataFile) {
+      headers.putIfAbsent("Content-Type", () => "application/json");
+    }
     headers.putIfAbsent("Accept", () => "application/json");
     if (hasBearerToken) {
       final token = await TokenManager.getAccessToken();

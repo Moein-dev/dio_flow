@@ -26,13 +26,14 @@ class FileHandlerImpl {
   /// Uploads a single file to the specified endpoint.
   static Future<ResponseModel> uploadFile(
     dynamic endpoint,
+    RequestOptionsModel requestOptions,
     dynamic file, {
     String fieldName = 'file',
     Map<String, dynamic>? additionalData,
-    RequestOptionsModel requestOptions = const RequestOptionsModel(
-      hasBearerToken: true,
-    ),
     ProgressCallback? onProgress,
+    Map<String, dynamic>? parameters,
+    Map<String, dynamic>? pathParameters,
+    CancelToken? cancelToken,
   }) async {
     try {
       if (file == null || file is! File) {
@@ -61,6 +62,9 @@ class FileHandlerImpl {
 
       return await DioRequestHandler.post(
         endpoint,
+        pathParameters: pathParameters,
+        parameters: parameters,
+        cancelToken: cancelToken,
         data: formData,
         requestOptions: requestOptions,
       );
@@ -78,12 +82,12 @@ class FileHandlerImpl {
   /// Downloads a file from the specified endpoint.
   static Future<ResponseModel> downloadFile(
     dynamic endpoint,
+    RequestOptionsModel requestOptions,
     String savePath, {
     Map<String, dynamic>? parameters,
-    RequestOptionsModel requestOptions = const RequestOptionsModel(
-      hasBearerToken: true,
-    ),
     ProgressCallback? onProgress,
+    Map<String, dynamic>? pathParameters,
+    CancelToken? cancelToken,
   }) async {
     try {
       if (savePath.isEmpty) {
@@ -100,7 +104,9 @@ class FileHandlerImpl {
 
       final response = await DioRequestHandler.get(
         endpoint,
+        pathParameters: pathParameters,
         parameters: parameters,
+        cancelToken: cancelToken,
         requestOptions: options,
       );
 

@@ -68,17 +68,21 @@ class FileHandler {
     dynamic file, {
     String fieldName = 'file',
     Map<String, dynamic>? additionalData,
-    RequestOptionsModel requestOptions = const RequestOptionsModel(
-      hasBearerToken: true,
-    ),
+    RequestOptionsModel requestOptions = const RequestOptionsModel(),
     ProgressCallback? onProgress,
+    Map<String, dynamic>? parameters,
+    Map<String, dynamic>? pathParameters,
+    CancelToken? cancelToken,
   }) async {
     return platform.FileHandlerImpl.uploadFile(
       endpoint,
+      requestOptions,
       file,
+      pathParameters: pathParameters,
+      parameters: parameters,
+      cancelToken: cancelToken,
       fieldName: fieldName,
       additionalData: additionalData,
-      requestOptions: requestOptions,
       onProgress: onProgress,
     );
   }
@@ -100,10 +104,11 @@ class FileHandler {
     dynamic endpoint,
     Map<String, dynamic> files, {
     Map<String, dynamic>? additionalData,
-    RequestOptionsModel requestOptions = const RequestOptionsModel(
-      hasBearerToken: true,
-    ),
+    RequestOptionsModel requestOptions = const RequestOptionsModel(),
     ProgressCallback? onProgress,
+    Map<String, dynamic>? parameters,
+    Map<String, dynamic>? pathParameters,
+    CancelToken? cancelToken,
   }) async {
     try {
       final formData = FormData();
@@ -139,6 +144,9 @@ class FileHandler {
 
       return await DioRequestHandler.post(
         endpoint,
+        pathParameters: pathParameters,
+        parameters: parameters,
+        cancelToken: cancelToken,
         data: formData,
         requestOptions: requestOptions,
       );
@@ -172,10 +180,11 @@ class FileHandler {
     String filename, {
     String fieldName = 'file',
     Map<String, dynamic>? additionalData,
-    RequestOptionsModel requestOptions = const RequestOptionsModel(
-      hasBearerToken: true,
-    ),
+    RequestOptionsModel requestOptions = const RequestOptionsModel(),
     ProgressCallback? onProgress,
+    Map<String, dynamic>? parameters,
+    Map<String, dynamic>? pathParameters,
+    CancelToken? cancelToken,
   }) async {
     try {
       // Create multipart file from bytes
@@ -194,6 +203,9 @@ class FileHandler {
 
       return await DioRequestHandler.post(
         endpoint,
+        pathParameters: pathParameters,
+        parameters: parameters,
+        cancelToken: cancelToken,
         data: formData,
         requestOptions: requestOptions,
       );
@@ -234,16 +246,18 @@ class FileHandler {
     dynamic endpoint,
     String savePath, {
     Map<String, dynamic>? parameters,
-    RequestOptionsModel requestOptions = const RequestOptionsModel(
-      hasBearerToken: true,
-    ),
+    RequestOptionsModel requestOptions = const RequestOptionsModel(),
     ProgressCallback? onProgress,
+    Map<String, dynamic>? pathParameters,
+    CancelToken? cancelToken,
   }) async {
     return platform.FileHandlerImpl.downloadFile(
       endpoint,
+      requestOptions,
       savePath,
       parameters: parameters,
-      requestOptions: requestOptions,
+      pathParameters: pathParameters,
+      cancelToken: cancelToken,
       onProgress: onProgress,
     );
   }
@@ -261,10 +275,10 @@ class FileHandler {
   static Future<ResponseModel> downloadBytes(
     dynamic endpoint, {
     Map<String, dynamic>? parameters,
-    RequestOptionsModel requestOptions = const RequestOptionsModel(
-      hasBearerToken: true,
-    ),
+    RequestOptionsModel requestOptions = const RequestOptionsModel(),
     ProgressCallback? onProgress,
+    Map<String, dynamic>? pathParameters,
+    CancelToken? cancelToken,
   }) async {
     try {
       // Create options for file download
@@ -273,6 +287,8 @@ class FileHandler {
       final response = await DioRequestHandler.get(
         endpoint,
         parameters: parameters,
+        pathParameters: pathParameters,
+        cancelToken: cancelToken,
         requestOptions: options,
       );
 
@@ -315,9 +331,9 @@ class FileHandler {
   static Future<ResponseModel> getFileInfo(
     dynamic endpoint, {
     Map<String, dynamic>? parameters,
-    RequestOptionsModel requestOptions = const RequestOptionsModel(
-      hasBearerToken: true,
-    ),
+    RequestOptionsModel requestOptions = const RequestOptionsModel(),
+    Map<String, dynamic>? pathParameters,
+    CancelToken? cancelToken,
   }) async {
     try {
       // For HEAD requests, we can use the standard GET method
@@ -325,6 +341,8 @@ class FileHandler {
       final response = await DioRequestHandler.get(
         endpoint,
         parameters: parameters,
+        pathParameters: pathParameters,
+        cancelToken: cancelToken,
         requestOptions: requestOptions,
       );
 
