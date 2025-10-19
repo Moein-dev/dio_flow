@@ -222,7 +222,7 @@ class DioFlowLog {
 
     // create continuation prefix that shows the box border and aligns with firstPrefix
     final int contSpaces = firstPrefix.length > 2 ? firstPrefix.length - 2 : 2;
-    final String contPrefix = '║ ' + ''.padLeft(contSpaces);
+    final String contPrefix = '║ ${''.padLeft(contSpaces)}';
 
     final contCap = maxLineLength - contPrefix.length;
 
