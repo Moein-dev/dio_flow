@@ -11,6 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Bug fix for file requests via `FileHandler.uploadFile()` and `FileHandler.downloadFile()`
 
+## [2.0.1] - 2025-09-20
+
+### 🔧 Bug Fixes
+
+- Fixed a bug in pathParameters
+- Fixed Refresh token loop bug
+
 ## [2.0.0] - 2025-09-20
 
 ### 📚 Documentation
