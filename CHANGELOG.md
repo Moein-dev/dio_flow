@@ -5,20 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.0.2] - 2025-10-18
+## [3.0.0]
+
+### 🔧 Bug Fixes
+
+- Bug fix for file requests via `FileHandler()`
+
+### 🚀 Performance
+
+- Optimize Refresh Token Request Proccess
+- Optimize Console Logs Show
+
+### Add
+
+- Added `logModel` in `RequestOptionsModel()` for Customize Console Log Show
+- Added `receiveTimeout` in `RequestOptionsModel()` for Customize receiveTimeout in each Request
+- Added `CustomInterseptors` in `DioFlowConfig()` for Add Custom Interseptors in Dio Config
+
+## [2.0.2]
 
 ### 🔧 Bug Fixes
 
 - Bug fix for file requests via `FileHandler.uploadFile()` and `FileHandler.downloadFile()`
 
-## [2.0.1] - 2025-09-20
+## [2.0.1]
 
 ### 🔧 Bug Fixes
 
 - Fixed a bug in pathParameters
 - Fixed Refresh token loop bug
 
-## [2.0.0] - 2025-09-20
+## [2.0.0]
 
 ### 📚 Documentation
 
@@ -37,7 +54,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add a new handler for refresh token
 - Add customized console logs for each process in debug mode
 
-## [1.3.3] - 2025-09-10
+## [1.3.3]
 
 ### 🔧 Bug Fixes
 
@@ -45,11 +62,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Optimize inputs for authentication: Remove `requiresAuth` ... if token is required: `hasBearerToken = true`
 - Add a token refresh method when receiving a 401 error: Automatic update if a `RefreshTokenHandler` is available
 
-## [1.3.2] - 2025-09-02
+## [1.3.2]
 
 - Updated README.md
 
-## [1.3.1] - 2025-09-02
+## [1.3.1]
 
 ### 🌐 Web Platform Support
 
@@ -148,7 +165,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Extensible Architecture**: Easy to add custom functionality
 - **Production Ready**: Battle-tested with comprehensive error handling
 
-## [1.2.0] - 2025-08-15
+## [1.2.0]
 
 ### Added in 1.2.0
 
@@ -167,20 +184,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Prevent unexpected exceptions when no refresh handler is configured (returns `false`/`null` instead of forcing refresh)
 - Fixed race conditions during concurrent refresh attempts; refresh errors are now propagated to waiting callers
 
-## [1.1.10] - 2024-03-21
+## [1.1.10]
 
 ### Fixed in 1.1.10
 
 - Fixed cache key generation for non-string query parameters
 
-## [1.1.9] - 2024-03-21
+## [1.1.9]
 
 ### Fixed in 1.1.9
 
 - Fixed cache key generation for non-string query parameters
 - Improved handling of boolean and numeric query parameters in cache interceptor
 
-## [1.1.8] - 2024-03-21
+## [1.1.8]
 
 ### Added in 1.1.8
 

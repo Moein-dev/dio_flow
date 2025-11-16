@@ -1,5 +1,6 @@
 import 'package:dio_flow/dio_flow.dart';
 import 'package:dio_flow/src/handlers/dio_flow_log.dart';
+import 'package:dio_flow/src/models/log_model.dart';
 
 part 'success_response_model.dart';
 part 'failed_response_model.dart';

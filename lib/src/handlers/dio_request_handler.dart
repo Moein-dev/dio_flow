@@ -91,8 +91,9 @@ class DioRequestHandler {
         headers: headers,
       );
       final bool cacheLoad = requestOptions.cacheOptions.shouldCache;
-      if (firstAttempts) {
+      if (firstAttempts && requestOptions.logModel!.defaultLog) {
         DioFlowLog(
+          logModel: requestOptions.logModel!,
           type: DioLogType.request,
           url: DioFlowConfig.instance.baseUrl + endpointPath,
           method: newOptions.method,
@@ -221,10 +222,19 @@ class DioRequestHandler {
 
         /// 401 handle
         if (statusCode == 401 &&
-            (optionsThisAttempt.extra?['isTokenRefreshed'] ?? false) != true && requestOptions.hasBearerToken) {
+            (optionsThisAttempt.extra?['isTokenRefreshed'] ?? false) != true &&
+            requestOptions.hasBearerToken) {
           try {
             await TokenManager.refreshAccessToken();
-          } catch (_) {}
+          } catch (_) {
+            return FailedResponseModel.fromJson(
+              responseData,
+              endpointPath: endpointPath,
+              logCurl: responseCurlCommand,
+              fromCache: fromCache,
+              logModel: requestOptions.logModel!,
+            );
+          }
 
           final newToken = await TokenManager.getAccessToken();
 
@@ -245,6 +255,7 @@ class DioRequestHandler {
               endpointPath: endpointPath,
               logCurl: responseCurlCommand,
               fromCache: fromCache,
+              logModel: requestOptions.logModel!,
             );
           }
         }
@@ -256,6 +267,7 @@ class DioRequestHandler {
             endpointPath: endpointPath,
             logCurl: responseCurlCommand,
             fromCache: fromCache,
+            logModel: requestOptions.logModel!,
           );
         } else {
           if (!isLastAttempt &&
@@ -265,8 +277,9 @@ class DioRequestHandler {
                 null,
               )) {
             /// Create Console Log For this Atetempts
-            if (!firstAttempts) {
+            if (!firstAttempts && requestOptions.logModel!.defaultLog) {
               DioFlowLog(
+                logModel: requestOptions.logModel!,
                 type: DioLogType.retry,
                 url: DioFlowConfig.instance.baseUrl + endpointPath,
                 method: newOptions.method,
@@ -288,11 +301,20 @@ class DioRequestHandler {
               endpointPath: endpointPath,
               logCurl: responseCurlCommand,
               fromCache: fromCache,
+              logModel: requestOptions.logModel!,
             );
           }
         }
       } on DioException catch (error) {
-        // determine user-friendly error type (if you need it)
+        final exeptionCurlCommand = DioHndlerHelper.curlCommand(
+          methodOverride: methodOverride,
+          baseUrl: DioFlowConfig.instance.baseUrl,
+          endpointPath: endpointPath,
+          data: data,
+          parameters: parameters,
+          headers: headers,
+        );
+
         ErrorType errorType;
         if (error.requestOptions.extra['errorType'] == 'preparation_error') {
           errorType = ErrorType.validation;
@@ -304,7 +326,6 @@ class DioRequestHandler {
           errorType = ErrorType.fromDioErrorType(error.type);
         }
 
-        // prepare errorResponseData safely (guard for nulls)
         Map<String, dynamic> errorResponseData;
         if (error.response?.data is Map<String, dynamic>) {
           errorResponseData = Map<String, dynamic>.from(error.response!.data);
@@ -339,7 +360,6 @@ class DioRequestHandler {
 
         errorResponseData['extra'] = optionsThisAttempt.extra ?? {};
 
-        // Add relevant headers only if present
         if (error.response?.headers != null &&
             error.response!.headers.map.isNotEmpty) {
           final relevantHeaders = <String, dynamic>{};
@@ -359,28 +379,20 @@ class DioRequestHandler {
           }
         }
 
-        /// Create log curl and Console Log for Exeptions
-        final exeptionCurlCommand = DioHndlerHelper.curlCommand(
-          methodOverride: methodOverride,
-          baseUrl: DioFlowConfig.instance.baseUrl,
-          endpointPath: endpointPath,
-          data: data,
-          parameters: parameters,
-          headers: headers,
-        );
-
-        // if cancell request
         if (error.type == DioExceptionType.cancel) {
           return FailedResponseModel.fromJson(
             {'status': 499, 'message': 'Request cancelled by user'},
+            logModel: requestOptions.logModel!,
             endpointPath: endpointPath,
             logCurl: exeptionCurlCommand,
           );
         }
 
-        if (!isLastAttempt && DioHndlerHelper.shouldRetry(null, null, error)) {
-          /// Create Console Log For this Atetempts
+        if (!isLastAttempt &&
+            DioHndlerHelper.shouldRetry(null, null, error) &&
+            requestOptions.logModel!.defaultLog) {
           DioFlowLog(
+            logModel: requestOptions.logModel!,
             type: DioLogType.retry,
             url: DioFlowConfig.instance.baseUrl + endpointPath,
             method: newOptions.method,
@@ -394,19 +406,21 @@ class DioRequestHandler {
             maxAttempts: maxAttempts,
           ).log();
           await Future.delayed(interval);
-          continue; // retry
+          continue;
         } else {
           return FailedResponseModel.fromJson(
             errorResponseData,
+            logModel: requestOptions.logModel!,
             endpointPath: endpointPath,
             logCurl: exeptionCurlCommand,
           );
         }
-      } // end catch
+      }
     } // end for
 
     return FailedResponseModel.fromJson(
       {'status': 500, 'message': 'Request aborted after retries'},
+      logModel: requestOptions.logModel!,
       endpointPath: endpointPath,
       logCurl: firstCurl,
     );
@@ -416,7 +430,6 @@ class DioRequestHandler {
     dynamic endpoint, {
     Map<String, dynamic>? parameters,
     Map<String, dynamic>? pathParameters,
-    dynamic data,
     RequestOptionsModel requestOptions = const RequestOptionsModel(),
     CancelToken? cancelToken,
   }) async {
@@ -424,7 +437,6 @@ class DioRequestHandler {
       endpoint,
       parameters: parameters,
       pathParameters: pathParameters,
-      data: data,
       requestOptions: requestOptions,
       methodOverride: HttpMethods.get,
       cancelToken: cancelToken,

@@ -44,6 +44,7 @@ class SuccessResponseModel extends ResponseModel {
   ///   A new SuccessResponseModel instance populated with the parsed data
   factory SuccessResponseModel.fromJson(
     Map<String, dynamic> json, {
+    LogModel logModel = LogModel.defaultLogModel,
     String? endpointPath = '',
     String logCurl = '',
     bool fromCache = false,
@@ -67,19 +68,21 @@ class SuccessResponseModel extends ResponseModel {
     // Extract metadata if available
     final meta = _extractMeta(json);
 
-
-    DioFlowLog(
-      url: DioFlowConfig.instance.baseUrl + endpointPath!,
-      type: DioLogType.response,
-      statusCode: statusCode,
-      message: message,
-      data: data,
-      headers: json['headers'],
-      logCurl: logCurl,
-      isCache: fromCache,
-      extra: extra,
-      isRefreshHandle: isRefreshHandle,
-    ).log();
+    if (logModel.defaultLog) {
+      DioFlowLog(
+        logModel: logModel,
+        url: DioFlowConfig.instance.baseUrl + endpointPath!,
+        type: DioLogType.response,
+        statusCode: statusCode,
+        message: message,
+        data: data,
+        headers: json['headers'],
+        logCurl: logCurl,
+        isCache: fromCache,
+        extra: extra,
+        isRefreshHandle: isRefreshHandle,
+      ).log();
+    }
 
     return SuccessResponseModel(
       logCurl: logCurl,

@@ -46,3 +46,5 @@ class HttpMethods {
         upperMethod == options;
   }
 }
+
+enum UploadMethodsEnum { post, put, patch }

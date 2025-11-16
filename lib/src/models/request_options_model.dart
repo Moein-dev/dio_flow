@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:dio_flow/src/models/cache_options_model.dart';
+import 'package:dio_flow/src/models/log_model.dart';
 import 'package:dio_flow/src/models/retry_options.dart';
 
 /// Model class for configuring request options.
@@ -20,6 +21,13 @@ class RequestOptionsModel {
 
   /// Custom headers to include in the request.
   final Map<String, dynamic>? customHeaders;
+
+  /// for console log handle
+  final LogModel? logModel;
+
+  /// custom receiveTimeout
+  /// if not set,used default value from DioFlowConfig
+  final Duration? receiveTimeout;
 
   /// The response type (e.g., json, stream, plain, bytes).
   final ResponseType? responseType;
@@ -56,6 +64,8 @@ class RequestOptionsModel {
     this.maxRedirects,
     this.persistentConnection,
     this.customExtra,
+    this.logModel = LogModel.defaultLogModel,
+    this.receiveTimeout,
   });
 
   RetryOptions get effectiveRetryOptions => retryOptions;
@@ -75,6 +85,8 @@ class RequestOptionsModel {
     int? maxRedirects,
     bool? persistentConnection,
     Map<String, dynamic>? userExtra,
+    LogModel? logModel,
+    Duration? receiveTimeout,
   }) {
     return RequestOptionsModel(
       hasBearerToken: hasBearerToken ?? this.hasBearerToken,
@@ -88,6 +100,8 @@ class RequestOptionsModel {
       maxRedirects: maxRedirects ?? this.maxRedirects,
       persistentConnection: persistentConnection ?? this.persistentConnection,
       customExtra: userExtra ?? customExtra,
+      logModel: logModel ?? this.logModel,
+      receiveTimeout: receiveTimeout ?? this.receiveTimeout,
     );
   }
 
@@ -114,6 +128,7 @@ class RequestOptionsModel {
         'shouldCache': effectiveCacheOptions.shouldCache,
         'cacheDuration': effectiveCacheOptions.cacheDuration,
       },
+      receiveTimeout: receiveTimeout,
     );
   }
 

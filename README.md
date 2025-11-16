@@ -101,7 +101,7 @@ Dio Flow transforms your API integration experience by providing enterprise-grad
 
 ```yaml
 dependencies:
-  dio_flow: ^2.0.2
+  dio_flow: ^3.0.0
 ```
 
 ### 🔄 Install
@@ -122,7 +122,7 @@ For enhanced development experience:
 
 ```yaml
 dev_dependencies:
-  dio_flow: ^1.3.1
+  dio_flow: ^3.0.0
   # For testing with mocks
   mockito: ^5.4.0
   # For integration testing
@@ -763,23 +763,15 @@ Dio Flow provides comprehensive file operations that work consistently across al
 
 ```dart
 // File upload from File object (Mobile/Desktop only)
-final file = File('/path/to/file.jpg');
-final uploadResponse = await FileHandler.uploadFile(
-  'upload',
-  file,
-  fieldName: 'avatar',
+Map<String, File> files =  {"image" : File('/path/to/file.jpg')};
+final uploadResponse = await FileHandler.uploadFile<File>(
+  'upload', //endpoint
+  files,
+  UploadMethodsEnum.post,
   additionalData: {'userId': '123'},
+  requestOptions = const RequestOptionsModel(),
   onProgress: (sent, total) {
     print('Upload: ${(sent/total*100).toStringAsFixed(1)}%');
-  },
-);
-
-// File download to disk (Mobile/Desktop only)
-final downloadResponse = await FileHandler.downloadFile(
-  'files/123/download',
-  '/local/path/file.pdf',
-  onProgress: (received, total) {
-    print('Download: ${(received/total*100).toStringAsFixed(1)}%');
   },
 );
 ```
@@ -788,40 +780,34 @@ final downloadResponse = await FileHandler.downloadFile(
 
 ```dart
 // Upload from bytes (web-compatible)
-final bytesUploadResponse = await FileHandler.uploadBytes(
-  'upload',
-  fileBytes, // Uint8List
+Map<String, Unit8List> files =  {"image" : fileBytes};
+final bytesUploadResponse = await FileHandler.uploadFile<Unit8List>(
+  'upload', //endpoint
+  files, 
   'filename.jpg',
-  fieldName: 'avatar',
+  UploadMethodsEnum.post,
   additionalData: {'userId': '123'},
+  requestOptions = const RequestOptionsModel(),
+  onProgress: (sent, total) {
+    print('Upload: ${(sent/total*100).toStringAsFixed(1)}%');
+  },
 );
-
-// Download as bytes (web-compatible)
-final bytesResponse = await FileHandler.downloadBytes('files/123');
-if (bytesResponse is SuccessResponseModel) {
-  final bytes = bytesResponse.data['bytes'] as Uint8List;
-  // Use bytes for web download (e.g., trigger browser download)
-}
 ```
 
 ### Cross-Platform File Operations
 
 ```dart
-// Multiple file upload (use bytes for web compatibility)
-final files = {
-  'document': documentBytes, // Uint8List for web
-  'image': imageBytes,       // Uint8List for web
-};
-final multiUploadResponse = await FileHandler.uploadMultipleFiles(
-  'upload-multiple',
-  files,
-);
-
-// Upload from bytes (works on all platforms)
-final bytesUploadResponse = await FileHandler.uploadBytes(
-  'upload',
-  fileBytes,
+Map<String, T> files =  {"image" : T};
+final bytesUploadResponse = await FileHandler.uploadFile<T>(
+  'upload', //endpoint
+  files, // both of (File or Unit8List)
   'filename.jpg',
+  UploadMethodsEnum.post,
+  additionalData: {'userId': '123'},
+  requestOptions = const RequestOptionsModel(),
+  onProgress: (sent, total) {
+    print('Upload: ${(sent/total*100).toStringAsFixed(1)}%');
+  },
 );
 ```
 

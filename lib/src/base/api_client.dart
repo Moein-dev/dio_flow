@@ -55,6 +55,10 @@ class ApiClient {
       ),
     ]);
 
+    if (config.customInterceptors != null && config.customInterceptors!.isNotEmpty) {
+      dio.interceptors.addAll(config.customInterceptors!);
+    }
+
     return dio;
   }
 

@@ -1,6 +1,6 @@
 name: dio_flow
 description: Flexible HTTP client for Flutter, built on Dio with mock support, GraphQL, file handling, caching, and token management.
-version: 2.0.2
+version: 3.0.0
 homepage: https://github.com/Moein-dev/dio_flow
 repository: https://github.com/Moein-dev/dio_flow
 issue_tracker: https://github.com/Moein-dev/dio_flow/issues
@@ -26,6 +26,9 @@ dependencies:
   shared_preferences: ^2.5.3
   log_curl_request: ^0.1.0
   colorful_log_plus: ^1.0.8
+  http_parser: ^4.0.2
+  path: ^1.9.0
+  web: ^1.1.0
 
 dev_dependencies:
   flutter_test:

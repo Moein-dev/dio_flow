@@ -46,12 +46,12 @@ class FailedResponseModel extends ResponseModel {
   ///   A new FailedResponseModel instance populated with the parsed error data
   factory FailedResponseModel.fromJson(
     Map<String, dynamic> json, {
+    LogModel logModel = LogModel.defaultLogModel,
     String endpointPath = '',
     String logCurl = '',
     bool fromCache = false,
     bool isRefreshHandle = false,
   }) {
-
     // Extract the status code or default to 400 (Bad Request)
     final statusCode =
         json["status"] ?? json["statusCode"] ?? json["code"] ?? 400;
@@ -67,17 +67,20 @@ class FailedResponseModel extends ResponseModel {
     // Determine the error type based on status code
     final errorType = ErrorType.fromStatusCode(statusCode);
 
-    DioFlowLog(
-      url: DioFlowConfig.instance.baseUrl + endpointPath,
-      type: DioLogType.error,
-      statusCode: statusCode,
-      message: message,
-      error: error,
-      logCurl: logCurl,
-      isCache: fromCache,
-      extra: extra,
-      isRefreshHandle: isRefreshHandle,
-    ).log();
+    if (logModel.defaultLog) {
+      DioFlowLog(
+        logModel: logModel,
+        url: DioFlowConfig.instance.baseUrl + endpointPath,
+        type: DioLogType.error,
+        statusCode: statusCode,
+        message: message,
+        error: error,
+        logCurl: logCurl,
+        isCache: fromCache,
+        extra: extra,
+        isRefreshHandle: isRefreshHandle,
+      ).log();
+    }
 
     return FailedResponseModel(
       logCurl: logCurl,

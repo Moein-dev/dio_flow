@@ -1,3 +1,5 @@
+import 'package:dio/dio.dart';
+
 /// Configuration for the dio_flow package.
 ///
 /// This class provides configuration options for the dio_flow package,
@@ -18,12 +20,16 @@ class DioFlowConfig {
   /// The time to wait for sending data.
   final Duration sendTimeout;
 
+  /// custom Interseptors
+  final List<Interceptor>? customInterceptors;
+
   /// Private constructor to prevent direct instantiation.
   DioFlowConfig._({
     required this.baseUrl,
     this.connectTimeout = const Duration(seconds: 30),
     this.receiveTimeout = const Duration(seconds: 30),
     this.sendTimeout = const Duration(seconds: 30),
+    this.customInterceptors,
   });
 
   /// Initializes the configuration for dio_flow package.
@@ -49,12 +55,14 @@ class DioFlowConfig {
     Duration connectTimeout = const Duration(seconds: 30),
     Duration receiveTimeout = const Duration(seconds: 30),
     Duration sendTimeout = const Duration(seconds: 30),
+    List<Interceptor>? customInterceptors,
   }) {
     _instance = DioFlowConfig._(
       baseUrl: baseUrl,
       connectTimeout: connectTimeout,
       receiveTimeout: receiveTimeout,
       sendTimeout: sendTimeout,
+      customInterceptors: customInterceptors,
     );
   }
 
@@ -86,7 +94,6 @@ class DioFlowConfig {
   }
 }
 
-
 String removeAfterThirdSlash(String url) {
   int slashCount = 0;
   for (int i = 0; i < url.length; i++) {
@@ -97,5 +104,5 @@ String removeAfterThirdSlash(String url) {
       }
     }
   }
-  return url; 
+  return url;
 }

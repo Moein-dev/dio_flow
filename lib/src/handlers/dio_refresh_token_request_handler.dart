@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:dio_flow/dio_flow.dart';
 import 'package:dio_flow/src/handlers/dio_flow_log.dart';
 import 'package:dio_flow/src/handlers/dio_hndler_helper.dart';
+import 'package:dio_flow/src/models/log_model.dart';
 
 /// for refreshToken Handle
 class DioRefreshTokenRequestHandle {
@@ -16,7 +17,7 @@ class DioRefreshTokenRequestHandle {
   }) async {
     /// Prepare Header
     Map<String, dynamic> headers = await DioHndlerHelper.prepareHeaders(
-      hasBearerToken: requestOptions.hasBearerToken,
+      hasBearerToken: false,
       additionalHeaders: requestOptions.customHeaders ?? {},
     );
 
@@ -37,6 +38,7 @@ class DioRefreshTokenRequestHandle {
     );
 
     DioFlowLog(
+      logModel: LogModel.disabledAllLog,
       type: DioLogType.request,
       url: DioFlowConfig.instance.baseUrl + endpointPath,
       method: dioOptions.method,
