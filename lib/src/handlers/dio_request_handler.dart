@@ -181,7 +181,7 @@ class DioRequestHandler {
           responseData = {'data': response.data, 'status': response.statusCode};
         }
 
-        responseData['extra'] = optionsThisAttempt.extra ?? {};
+        // responseData['extra'] = optionsThisAttempt.extra ?? {};
 
         if (!responseData.containsKey('status') &&
             !responseData.containsKey('statusCode')) {
@@ -189,8 +189,8 @@ class DioRequestHandler {
         }
 
         // headers
-        if (response.headers.map.isNotEmpty) {
           final relevantHeaders = <String, dynamic>{};
+        if (response.headers.map.isNotEmpty) {
           for (final h in [
             'content-type',
             'authorization',
@@ -202,9 +202,9 @@ class DioRequestHandler {
               relevantHeaders[h] = response.headers.value(h);
             }
           }
-          if (relevantHeaders.isNotEmpty) {
-            responseData['headers'] = relevantHeaders;
-          }
+          // if (relevantHeaders.isNotEmpty) {
+          //   responseData['headers'] = relevantHeaders;
+          // }
         }
 
         final statusCode = response.statusCode ?? 500;
@@ -268,6 +268,8 @@ class DioRequestHandler {
             logCurl: responseCurlCommand,
             fromCache: fromCache,
             logModel: requestOptions.logModel!,
+            headers: relevantHeaders,
+            extra: optionsThisAttempt.extra,
           );
         } else {
           if (!isLastAttempt &&
