@@ -1,6 +1,5 @@
 import 'package:dio_flow/dio_flow.dart';
 import 'package:dio_flow/src/handlers/dio_flow_log.dart';
-import 'package:dio_flow/src/models/log_model.dart';
 
 part 'success_response_model.dart';
 part 'failed_response_model.dart';
@@ -72,8 +71,7 @@ abstract class ResponseModel {
     bool forceSuccess = false,
     bool forceFailure = false,
   }) {
-    final statusCode =
-        json["status"] ?? json["statusCode"] ?? json["code"];
+    final statusCode = json["status"] ?? json["statusCode"] ?? json["code"];
 
     if (forceSuccess) {
       return SuccessResponseModel.fromJson(json);
@@ -147,4 +145,7 @@ extension ResponseModelExtension on ResponseModel {
 
   /// Returns true if this is a failed response.
   bool get isFailure => this is FailedResponseModel;
+
+  /// Returns true if this response was served from local cache.
+  bool get isFromCache => extra?['fromCache'] == true;
 }

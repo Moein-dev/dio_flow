@@ -1,1004 +1,468 @@
-# 🌊 Dio Flow
+# 🌊 DioFlow
 
 [![pub package](https://img.shields.io/pub/v/dio_flow.svg?style=for-the-badge&logo=dart&logoColor=white)](https://pub.dev/packages/dio_flow)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
-[![Flutter](https://img.shields.io/badge/Flutter-3.7.0+-02569B?style=for-the-badge&logo=flutter&logoColor=white)](https://flutter.dev)
-[![Platform](https://img.shields.io/badge/Platform-iOS%20%7C%20Android%20%7C%20Web%20%7C%20Windows%20%7C%20macOS%20%7C%20Linux-lightgrey?style=for-the-badge)](https://flutter.dev/multi-platform)
+[![Dart](https://img.shields.io/badge/Dart-3.7%2B-0175C2?style=for-the-badge&logo=dart&logoColor=white)](https://dart.dev)
+[![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20iOS%20%7C%20Web%20%7C%20macOS%20%7C%20Windows%20%7C%20Linux-02569B?style=for-the-badge&logo=flutter&logoColor=white)](https://flutter.dev/multi-platform)
 
-A powerful, production-ready Flutter package that supercharges Dio HTTP client
-
-Built for modern Flutter applications that demand robust, scalable API integration
-
-[📖 Documentation](#-table-of-contents) • [🚀 Quick Start](#-getting-started) • [💡 Examples](example/) • [🐛 Issues](https://github.com/Moein-dev/dio_flow/issues)
+A robust, developer-friendly Flutter HTTP client built on Dio that handles the heavy lifting out of the box: **predictable typed responses**, **single-flight token refresh**, **stream-safe retries**, **isolated local caching**, **built-in request mocking**, and **real-time upload progress tracking**.
 
 ---
 
-## 🎯 Why Dio Flow?
+## ⚡ 30-Second Quick Start
 
-Dio Flow transforms your API integration experience by providing enterprise-grade features out of the box:
-
-- **🔥 Zero Configuration**: Get started in minutes with sensible defaults
-- **🛡️ Production Ready**: Battle-tested with comprehensive error handling
-- **🚀 Performance First**: Built-in caching, retry logic, and request optimization
-- **🌐 Universal**: Works seamlessly across all Flutter platforms
-- **🧪 Developer Friendly**: Extensive mocking support for testing
-- **📊 Observable**: Built-in metrics and detailed logging
-
-## 📋 Table of Contents
-
-- [🎯 Why Dio Flow?](#-why-dio-flow)
-- [✨ Features](#-features)
-- [🎯 Platform Support](#-platform-support)
-- [📦 Installation](#-installation)
-- [🚀 Getting Started](#-getting-started)
-- [🎯 Core Components](#-core-components)
-- [� Authentication](#-authentication)
-- [🌐 Endpoint Configuration](#-endpoint-configuration)
-- [🔄 Advanced Features](#-advanced-features)
-- [�️ uBest Practices](#️-best-practices)
-- [🧪 Mock Support](#-mock-support)
-- [� GraphQL Support](#-graphql-support)
-- [� FBile Operations](#-file-operations)
-- [🔍 Troubleshooting](#-troubleshooting)
-- [🤝 Contributing](#-contributing)
-- [� LicenseOse](#-license)
-
-## ✨ Features
-
-| 🚀 **Core**             | 🔒 **Security**        | 🛠️ **Developer Experience** |
-| ----------------------- | ---------------------- | --------------------------- |
-| Modern HTTP Client      | Token Management       | Type-Safe Responses         |
-| Smart Response Handling | Auto Token Refresh     | Comprehensive Testing       |
-| Intelligent Caching     | Request Authentication | Built-in Mocking            |
-| Auto-Retry Logic        | Secure Token Storage   | Detailed Logging            |
-
-| 🌐 **Platform**   | 📊 **Performance** | 🔧 **Advanced**  |
-| ----------------- | ------------------ | ---------------- |
-| Universal Support | Request Metrics    | GraphQL Support  |
-| Web Compatible    | Rate Limiting      | File Operations  |
-| Cross-Platform    | Network Awareness  | Pagination Utils |
-| WASM Ready        | Connection Pooling | JSON Utilities   |
-
-### 🎯 Key Capabilities
-
-- **🚀 Modern HTTP Client**: Enhanced Dio with production-grade features
-- **🔄 Smart Response Handling**: Automatic conversion to strongly-typed models
-- **💾 Intelligent Caching**: Configurable TTL with automatic invalidation
-- **🔑 Token Management**: Robust authentication with automatic refresh
-- **🔁 Auto-Retry**: Configurable retry logic with exponential backoff
-- **⚡ Rate Limiting**: Built-in throttling to prevent API abuse
-- **📶 Network Awareness**: Automatic connectivity change handling
-- **📊 Request Metrics**: Built-in performance tracking and analytics
-- **🔍 Detailed Logging**: Complete request/response logging with cURL commands
-- **📄 Pagination Support**: Utilities for handling paginated API responses
-- **🛡️ Type Safety**: Strong typing throughout the entire library
-- **🎯 Error Handling**: Comprehensive error handling with typed responses
-- **🧪 Mock Support**: Built-in mocking system for testing without real HTTP calls
-- **🔗 GraphQL Support**: Native GraphQL queries, mutations, and subscriptions
-- **📁 File Operations**: Easy file upload/download with progress tracking
-- **🔧 Extensible Architecture**: Plugin-based design for custom functionality
-
-## 🎯 Platform Support
-
-### 🌐 Universal Flutter Support - Write Once, Run Everywhere
-
-| Platform       | Support | File Operations | Network Checking | WASM Compatible |
-| -------------- | ------- | --------------- | ---------------- | --------------- |
-| 📱 **iOS**     | ✅ Full | ✅ Complete     | ✅ Native        | ✅ Ready        |
-| 🤖 **Android** | ✅ Full | ✅ Complete     | ✅ Native        | ✅ Ready        |
-| 🌐 **Web**     | ✅ Full | 🔄 Bytes Only\* | ✅ HTTP-based    | ✅ Compatible   |
-| 🪟 **Windows** | ✅ Full | ✅ Complete     | ✅ Native        | ✅ Ready        |
-| 🍎 **macOS**   | ✅ Full | ✅ Complete     | ✅ Native        | ✅ Ready        |
-| 🐧 **Linux**   | ✅ Full | ✅ Complete     | ✅ Native        | ✅ Ready        |
-
-> **💡 Web Platform Note**: File operations use `Uint8List` instead of `File` objects due to browser security restrictions. This ensures maximum compatibility while maintaining functionality.
-
-## 📦 Installation
-
-### Get started in seconds with a single dependency
-
-### 📋 Add Dependency
+### 1. Add Dependencies
 
 ```yaml
 dependencies:
-  dio_flow: ^3.0.0
+  dio_flow: ^3.1.0
+  dio: ^5.11.0
 ```
 
-### 🔄 Install
-
-```bash
-flutter pub get
-```
-
-### 📱 Import
+### 2. Initialize in `main()`
 
 ```dart
-import 'package:dio_flow/dio_flow.dart';
-```
-
-#### 📦 Development Dependencies (Optional)
-
-For enhanced development experience:
-
-```yaml
-dev_dependencies:
-  dio_flow: ^3.0.0
-  # For testing with mocks
-  mockito: ^5.4.0
-  # For integration testing
-  integration_test:
-    sdk: flutter
-```
-
-## 🚀 Getting Started
-
-### ⚡ From zero to API calls in under 2 minutes
-
-### 🎯 Quick Setup
-
-```dart
+import 'package:flutter/material.dart';
 import 'package:dio_flow/dio_flow.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 🔧 Configure Dio Flow
   DioFlowConfig.initialize(
     baseUrl: 'https://api.example.com',
-    connectTimeout: const Duration(seconds: 30),
-    receiveTimeout: const Duration(seconds: 30),
-    sendTimeout: const Duration(seconds: 30),
+    connectTimeout: const Duration(seconds: 15),
+    receiveTimeout: const Duration(seconds: 15),
   );
-
-  // 🚀 Initialize the client
   await ApiClient.initialize();
 
-  // 🔑 Initialize token management
-  await TokenManager.initialize();
-
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 ```
 
-### 🎯 Your First API Call
+### 3. Make Your First Request
 
 ```dart
-// 📡 Make your first request
-final response = await DioRequestHandler.get('users');
+final response = await DioRequestHandler.get('/users/1');
 
-if (response is SuccessResponseModel) {
-  print('✅ Success: ${response.data}');
+if (response.isSuccess) {
+  print('User: ${response.data}');
 } else {
-  print('❌ Error: ${response.error?.message}');
+  print('Error ${response.statusCode}: ${response.message}');
 }
-```
-
-## 🎯 Core Components
-
-### DioRequestHandler
-
-The main class for making HTTP requests:
-
-```dart
-// GET request
-final response = await DioRequestHandler.get(
-  'users',
-  parameters: {'role': 'admin'},
-  requestOptions: RequestOptionsModel(
-    hasBearerToken: true,
-    cacheOptions: CacheOptions(
-      shouldCache: true,
-      cacheDuration: const Duration(minutes: 5),
-    ),
-    retryOptions: RetryOptions(
-      maxAttempts: 3,
-      retryInterval: const Duration(seconds: 1),
-    ),
-  ),
-);
-
-// POST request with typed response
-final loginResponse = await DioRequestHandler.post<LoginResponse>(
-  'auth/login',
-  data: {
-    'email': 'user@example.com',
-    'password': '********',
-  },
-  requestOptions: RequestOptionsModel(
-    hasBearerToken: false,
-  ),
-);
-```
-
-### Response Models
-
-All responses are wrapped in typed models:
-
-```dart
-if (response is SuccessResponseModel) {
-  final data = response.data;
-  // Handle success
-} else {
-  final error = response.error;
-  switch (error.errorType) {
-    case ErrorType.network:
-      // Handle network error
-      break;
-    case ErrorType.validation:
-      // Handle validation error
-      break;
-    case ErrorType.unauthorized:
-      // Handle auth error
-      break;
-    // ... handle other error types
-  }
-}
-```
-
-### Interceptors
-
-The package includes several built-in interceptors that are automatically configured:
-
-1. **MetricsInterceptor**: Tracks request performance and timing
-2. **CacheInterceptor**: Manages response caching with SharedPreferences
-3. **RateLimitInterceptor**: Prevents API throttling (30 requests per minute by default)
-
-These interceptors are automatically added to the Dio instance when `ApiClient.initialize()` is called. No additional configuration is required.
-
-## 🔑 Authentication
-
-### 🛡️ Enterprise-grade authentication with automatic token management
-
-Dio Flow provides a comprehensive authentication system with persistent storage, automatic token refresh, and seamless integration:
-
-```dart
-// Initialize token manager (call this in your main.dart)
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await TokenManager.initialize();
-
-  // Register refresh logic (consumer-side). Optional — if you don't set it,
-  // automatic refresh will be disabled and TokenManager will return null on expired token.
-  TokenManager.setRefreshHandler((refreshToken) async {
-    final refreshResp = await DioRefreshTokenRequestHandle.post(
-      ApiEndpointsKey.refreshToken,
-      data: {'refreshToken': refreshToken},
-    );
-
-    if (refreshResp is! SuccessResponseModel) {
-      // go to login page
-    }
-
-    final data = refreshResp.data!;
-
-    return RefreshTokenResponse(
-      accessToken: data['accessToken'] as String,
-      refreshToken: data['refreshToken'] as String?,
-      expiry: DateTime.now().add(Duration(days: 29)),
-      );
-  });
-
-  runApp(MyApp());
-}
-
-// Setting tokens with persistence
-await TokenManager.setTokens(
-  accessToken: 'your_access_token',
-  refreshToken: 'your_refresh_token',
-  expiry: DateTime.now().add(Duration(hours: 1)),
-);
-
-// Check presence/validity (auto-refresh performed if expired and handler is set)
-final hasToken = await TokenManager.hasAccessToken(); // returns true/false
-
-// Getting access token (will automatically refresh if expired and a handler is configured)
-final token = await TokenManager.getAccessToken(); // can be null if no handler and expired
-
-// Clearing tokens
-await TokenManager.clearTokens();
-```
-
-Key features:
-
-- Persistent token storage using SharedPreferences (tokens survive app restarts).
-
-- RefreshTokenHandler typedef — consumer provides a small callback that receives the refresh token and returns a RefreshTokenResponse (access, refresh, expiry). This keeps the package network-agnostic.
-
-- TokenManager.setRefreshHandler(...) — register refresh logic at startup or runtime (optional).
-
-- Automatic refresh behavior — hasAccessToken() and getAccessToken() will automatically attempt to refresh when the access token is expired only if a refresh handler has been set. If no handler is provided, expired tokens are treated as absent (methods return false/null).
-
--Single-flight refresh protection — internal \_refreshCompleter ensures only one refresh request runs at a time; concurrent callers wait for that single result.
-
-- Tokens returned by the refresh handler are persisted via setTokens() (keeps state consistent across restarts).
-
-- All token operations are asynchronous for non-blocking startup and safer IO.
-
-- getAccessToken() behavior is unified: it either returns a valid token, triggers refresh (if handler exists), or returns null (if expired and no handler).
-
-### Protected Requests
-
-```dart
-// Make authenticated request
-final response = await DioRequestHandler.get(
-  'user/profile',
-  requestOptions: RequestOptionsModel(
-    hasBearerToken: true, // This will automatically include the token
-  ),
-);
-
-// Handle token expiration
-if (response.error?.errorType == ErrorType.unauthorized) {
-  // Token expired, handle refresh or logout
-}
-```
-
-## 🌐 Endpoint Configuration
-
-### Basic Endpoints
-
-```dart
-// Register endpoints
-EndpointProvider.instance.register('login', '/auth/login');
-EndpointProvider.instance.register('users', '/api/users');
-
-// Use registered endpoints
-final response = await DioRequestHandler.post(
-  'login',
-  data: {'email': email, 'password': password},
-);
-```
-
-### Dynamic Endpoints
-
-```dart
-// Register endpoint with parameters
-EndpointProvider.instance.register('user_details', '/api/users/{id}');
-
-// Use with path parameters
-final response = await DioRequestHandler.get(
-  'user_details',
-  pathParameters: {'id': '123'},
-);
-```
-
-## 🔄 Advanced Features
-
-### Caching
-
-```dart
-// Enable caching for a request
-final response = await DioRequestHandler.get(
-  'users',
-  requestOptions: RequestOptionsModel(
-    cacheOptions: CacheOptions(
-      shouldCache: true,
-      cacheDuration: const Duration(minutes: 5),
-    ),
-  ),
-);
-
-// Use predefined cache options
-final shortCacheResponse = await DioRequestHandler.get(
-  'frequent-data',
-  requestOptions: RequestOptionsModel(
-    cacheOptions: CacheOptions.shortApiCache, // 1 minute cache
-  ),
-);
-
-final longCacheResponse = await DioRequestHandler.get(
-  'static-data',
-  requestOptions: RequestOptionsModel(
-    cacheOptions: CacheOptions.longApiCache, // 1 hour cache
-  ),
-);
-
-// Clear cache
-await ApiClient.clearCache();
-```
-
-### Pagination
-
-```dart
-// Using pagination utilities
-final paginatedResponse = await DioRequestHandler.get(
-  'posts',
-  parameters: {
-    'page': 1,
-    'per_page': 20,
-  },
-);
-
-final pagination = PaginationHelper.fromResponse(paginatedResponse);
-final hasMore = pagination.hasNextPage;
-final totalPages = pagination.totalPages;
-```
-
-### JSON Utilities
-
-```dart
-// Safe JSON parsing
-final jsonData = JsonUtils.tryParseJson(rawJson);
-
-// Access nested values safely
-final nestedValue = JsonUtils.getNestedValue(
-  jsonData,
-  'user.profile.name',
-  'Default Name',
-);
-```
-
-### Request Queueing
-
-```dart
-// Queue multiple requests
-final responses = await Future.wait([
-  DioRequestHandler.get('users'),
-  DioRequestHandler.get('posts'),
-  DioRequestHandler.get('comments'),
-]);
-
-// Rate limiting is handled automatically by RateLimitInterceptor
-// Configure in ApiClient initialization (30 requests per minute by default)
-final rateLimitedResponse = await DioRequestHandler.get(
-  'high-frequency-endpoint',
-  requestOptions: RequestOptionsModel(hasBearerToken: true),
-);
-```
-
-### Retry Configuration
-
-```dart
-// Use predefined retry options for slow networks
-final response = await DioRequestHandler.get(
-  'unreliable-endpoint',
-  requestOptions: RequestOptionsModel(
-    retryOptions: RetryOptions.slowNetwork, // 5 attempts, 2 second intervals
-  ),
-);
-
-// Custom retry configuration
-final customRetryResponse = await DioRequestHandler.get(
-  'custom-endpoint',
-  requestOptions: RequestOptionsModel(
-    retryOptions: RetryOptions(
-      maxAttempts: 5,
-      retryInterval: const Duration(seconds: 2),
-      retryStatusCodes: [408, 429, 500, 502, 503, 504],
-    ),
-  ),
-);
-```
-
-### Cancell Request
-
-```dart
-// Use canceel token for Cancell Request every time
-final CancelToken testCancellToken = CancelToken();
-
-final response = await DioRequestHandler.get(
-  'test-endpoint',
-  ccancelToken: testCancelToken,
-);
-
-// For use :
-testCancelToken?.cancel('test_request_cancelled');
-```
-
-### Custom Response Types
-
-```dart
-class PaginatedResponse<T> {
-  final List<T> items;
-  final int total;
-  final int page;
-
-  PaginatedResponse.fromJson(
-    Map<String, dynamic> json,
-    T Function(Map<String, dynamic>) converter,
-  )   : items = (json['data'] as List)
-            .map((item) => converter(item))
-            .toList(),
-        total = json['total'] ?? 0,
-        page = json['page'] ?? 1;
-}
-
-// Use with typed response
-final response = await DioRequestHandler.get<PaginatedResponse<User>>(
-  'users',
-  converter: (json) => PaginatedResponse.fromJson(
-    json,
-    (item) => User.fromJson(item),
-  ),
-);
-```
-
-## 🛠️ Best Practices
-
-### 💡 Production-tested patterns for robust API integration
-
-### 🚀 Essential Patterns
-
-#### 1. **Initialize Early**
-
-```dart
-void main() async {
-  await ApiClient.initialize();
-  // ... rest of your app initialization
-}
-```
-
-#### 2. **Handle Errors Consistently**
-
-```dart
-try {
-  final response = await DioRequestHandler.get('endpoint');
-  if (response is SuccessResponseModel) {
-    // Handle success
-  } else {
-    // Use the typed error handling
-    handleError(response.error);
-  }
-} catch (e) {
-  // Handle unexpected errors
-}
-```
-
-#### 3. **Use Type-Safe Responses**
-
-```dart
-class UserResponse {
-  final String id;
-  final String name;
-
-  UserResponse.fromJson(Map<String, dynamic> json)
-      : id = json['id'],
-        name = json['name'];
-}
-
-final response = await DioRequestHandler.get<UserResponse>(
-  'users/me',
-  converter: (json) => UserResponse.fromJson(json),
-);
-```
-
-### Error Handling Patterns
-
-```dart
-// Create a reusable error handler
-Future<T> handleApiResponse<T>(ResponseModel response) async {
-  if (response is SuccessResponseModel) {
-    return response.data as T;
-  }
-
-  switch (response.error?.errorType) {
-    case ErrorType.network:
-      throw NetworkException(response.error!.message);
-    case ErrorType.unauthorized:
-      await handleUnauthorized();
-      throw AuthException(response.error!.message);
-    case ErrorType.validation:
-      throw ValidationException(response.error!.message);
-    default:
-      throw ApiException(response.error?.message ?? 'Unknown error');
-  }
-}
-
-// Use in your code
-try {
-  final users = await handleApiResponse<List<User>>(
-    await DioRequestHandler.get('users'),
-  );
-  // Use users data
-} on NetworkException catch (e) {
-  // Handle network error
-} on AuthException catch (e) {
-  // Handle auth error
-} on ValidationException catch (e) {
-  // Handle validation error
-} on ApiException catch (e) {
-  // Handle other API errors
-}
-```
-
-### 🏗️ Repository Pattern
-
-```dart
-class UserRepository {
-  Future<User> getCurrentUser() async {
-    final response = await DioRequestHandler.get<User>(
-      'users/me',
-      requestOptions: RequestOptionsModel(
-        hasBearerToken: true,
-        shouldCache: true,
-        cacheMaxAge: const Duration(minutes: 5),
-      ),
-      converter: (json) => User.fromJson(json),
-    );
-
-    return handleApiResponse<User>(response);
-  }
-
-  Future<void> updateProfile(UserUpdateRequest request) async {
-    final response = await DioRequestHandler.put(
-      'users/me',
-      data: request.toJson(),
-      requestOptions: RequestOptionsModel(hasBearerToken: true),
-    );
-
-    await handleApiResponse(response);
-  }
-}
-```
-
-### ⚡ Performance Tips
-
-#### 🚀 Optimization strategies for production apps
-
-```dart
-// 💾 Use caching strategically
-final response = await DioRequestHandler.get(
-  'static-data',
-  requestOptions: RequestOptionsModel(
-    cacheOptions: CacheOptions(
-      shouldCache: true,
-      cacheDuration: const Duration(hours: 1), // Cache static data longer
-    ),
-  ),
-);
-
-// 🔄 Batch requests when possible
-final futures = [
-  DioRequestHandler.get('users'),
-  DioRequestHandler.get('posts'),
-  DioRequestHandler.get('comments'),
-];
-final responses = await Future.wait(futures);
-
-// ⚡ Use pagination for large datasets
-final paginatedResponse = await PaginationUtils.fetchAllPages(
-  'large-dataset',
-  parameters: {'per_page': 50}, // Optimal page size
-  maxPages: 10, // Limit to prevent memory issues
-);
-
-// 🎯 Optimize file uploads
-final uploadResponse = await FileHandler.uploadBytes(
-  'upload',
-  compressedBytes, // Compress before upload
-  'file.jpg',
-  onProgress: (sent, total) {
-    // Update UI efficiently
-    if (sent % 1024 == 0) { // Update every KB
-      updateProgressUI(sent / total);
-    }
-  },
-);
-```
-
-## 🧪 Mock Support
-
-### 🎭 Powerful mocking system for comprehensive testing
-
-Dio Flow includes a sophisticated mocking system that makes testing your API integrations effortless:
-
-```dart
-void main() {
-  // Enable mock mode
-  MockDioFlow.enableMockMode();
-
-  // Register mock responses
-  MockDioFlow.mockResponse(
-    'users',
-    MockResponse.success([
-      {'id': 1, 'name': 'John Doe'},
-      {'id': 2, 'name': 'Jane Smith'},
-    ]),
-  );
-
-  // Register response queue for testing pagination
-  MockDioFlow.mockResponseQueue('posts', [
-    MockResponse.success({'page': 1, 'data': [...]}),
-    MockResponse.success({'page': 2, 'data': [...]}),
-  ]);
-
-  // Your tests will now use mocked responses
-  final response = await DioRequestHandler.get('users');
-
-  // Disable mock mode
-  MockDioFlow.disableMockMode();
-}
-```
-
-## 🔗 GraphQL Support
-
-### ⚡ Native GraphQL integration with powerful query building
-
-Dio Flow provides first-class GraphQL support with an intuitive query builder and comprehensive operation handling:
-
-```dart
-// Simple query
-final response = await GraphQLHandler.query('''
-  query GetUser($id: ID!) {
-    user(id: $id) {
-      id
-      name
-      email
-    }
-  }
-''', variables: {'id': '123'});
-
-// Using query builder
-final query = GraphQLQueryBuilder.query()
-    .operationName('GetUsers')
-    .variables({'first': 'Int'})
-    .body('users(first: $first) { id name }')
-    .build();
-
-// Mutations
-final mutationResponse = await GraphQLHandler.mutation('''
-  mutation CreateUser($input: CreateUserInput!) {
-    createUser(input: $input) {
-      id
-      name
-    }
-  }
-''', variables: {'input': {'name': 'John', 'email': 'john@example.com'}});
-
-// Batch operations
-final operations = [
-  GraphQLOperation(query: 'query { users { id } }'),
-  GraphQLOperation(query: 'query { posts { id } }'),
-];
-final batchResponse = await GraphQLHandler.batch(operations);
-```
-
-## 📁 File Operations
-
-### 📤📥 Seamless file handling across all platforms with progress tracking
-
-Dio Flow provides comprehensive file operations that work consistently across all Flutter platforms, with intelligent platform-specific optimizations:
-
-### Mobile/Desktop Platforms (iOS, Android, Windows, macOS, Linux)
-
-```dart
-// File upload from File object (Mobile/Desktop only)
-Map<String, File> files =  {"image" : File('/path/to/file.jpg')};
-final uploadResponse = await FileHandler.uploadFile<File>(
-  'upload', //endpoint
-  files,
-  UploadMethodsEnum.post,
-  additionalData: {'userId': '123'},
-  requestOptions = const RequestOptionsModel(),
-  onProgress: (sent, total) {
-    print('Upload: ${(sent/total*100).toStringAsFixed(1)}%');
-  },
-);
-```
-
-### Web Platform
-
-```dart
-// Upload from bytes (web-compatible)
-Map<String, Unit8List> files =  {"image" : fileBytes};
-final bytesUploadResponse = await FileHandler.uploadFile<Unit8List>(
-  'upload', //endpoint
-  files, 
-  'filename.jpg',
-  UploadMethodsEnum.post,
-  additionalData: {'userId': '123'},
-  requestOptions = const RequestOptionsModel(),
-  onProgress: (sent, total) {
-    print('Upload: ${(sent/total*100).toStringAsFixed(1)}%');
-  },
-);
-```
-
-### Cross-Platform File Operations
-
-```dart
-Map<String, T> files =  {"image" : T};
-final bytesUploadResponse = await FileHandler.uploadFile<T>(
-  'upload', //endpoint
-  files, // both of (File or Unit8List)
-  'filename.jpg',
-  UploadMethodsEnum.post,
-  additionalData: {'userId': '123'},
-  requestOptions = const RequestOptionsModel(),
-  onProgress: (sent, total) {
-    print('Upload: ${(sent/total*100).toStringAsFixed(1)}%');
-  },
-);
-```
-
-> **Note**: On web platform, direct file system access is restricted by browser security. Use `FileHandler.uploadBytes()` and `FileHandler.downloadBytes()` for web-compatible file operations.
-
-## 🔍 Troubleshooting
-
-### 🛠️ Quick solutions to common issues
-
-### 🚨 Common Issues & Solutions
-
-1. **Authentication Issues**:
-
-   - Ensure `hasBearerToken` is set correctly in `RequestOptionsModel`
-   - Check if tokens are properly managed in `TokenManager`
-
-2. **Caching Problems**:
-
-   - Verify `shouldCache` is enabled in request options
-   - Check cache duration settings
-   - Try clearing cache with `ApiClient.clearCache()`
-
-3. **Network Errors**:
-
-   - Check connectivity status
-   - Verify retry options are configured
-   - Examine cURL logs for request details
-
-4. **Mock Issues**:
-
-   - Ensure `MockDioFlow.enableMockMode()` is called before requests
-   - Verify mock responses are registered for the correct endpoints
-   - Check that endpoint paths match exactly
-
-5. **GraphQL Errors**:
-
-   - Validate GraphQL syntax in queries
-   - Check that variables match the schema
-   - Ensure the GraphQL endpoint is correctly configured
-
-6. **File Upload Issues**:
-   - Verify file permissions and paths
-   - Check server file size limits
-   - Ensure correct Content-Type headers for multipart uploads
-
-### 🔍 Debug Mode
-
-```dart
-// Enable detailed logging
-DioFlowConfig.initialize(
-  baseUrl: 'https://api.example.com',
-  // Debug logging is enabled by default in development
-);
-
-// All requests are automatically logged with cURL commands
-final response = await DioRequestHandler.get(
-  'users',
-  requestOptions: RequestOptionsModel(hasBearerToken: true),
-);
 ```
 
 ---
 
-## 📚 Quick Reference
+## 🧭 Why DioFlow?
 
-### ⚡ Common operations at a glance
+| Feature | Standard Dio | DioFlow |
+| --- | :---: | :---: |
+| **Response Format** | Raw `dynamic` / uncaught errors | Predictable `SuccessResponseModel` or `FailedResponseModel` |
+| **Crash Protection** | Unhandled exceptions crash UI | Internal guards ensure every call returns a structured model |
+| **Token Refresh** | Complex custom interceptors | Automatic single-flight refresh with queueing for concurrent 401s |
+| **Request Retries** | Retrying FormData burns stream | Automatically clones `FormData` on retry attempts |
+| **Local Cache** | Third-party cache store needed | Built-in isolated cache with query-key stabilization & `isFromCache` |
+| **Offline Mocking** | Mock adapters & build runners | Global `MockDioFlow` active with zero backend dependencies |
+| **Sensitive Logs** | Exposes bearer tokens in console | Automatically masks passwords, tokens, cookies, and keys in cURL |
+| **Web & WASM** | `dart:io` crashes on browser | 100% Web and WASM compatible with conditional adapters |
 
-#### 🔗 API Calls Cheat Sheet
+---
+
+## 📚 Table of Contents
+
+- [🚀 Everyday Usage (Cheat Sheet)](#-everyday-usage-cheat-sheet)
+- [📡 Request Methods & Parameters](#-request-methods--parameters)
+- [🧪 Offline Request Mocking](#-offline-request-mocking)
+- [💾 Smart Local Caching](#-smart-local-caching)
+- [🔐 Authentication & Automatic Token Refresh](#-authentication--automatic-token-refresh)
+- [📤 File Upload with Live Progress](#-file-upload-with-live-progress)
+- [📥 File Download](#-file-download)
+- [🔁 Automatic Retries & Crash Prevention](#-automatic-retries--crash-prevention)
+- [🚦 Rate Limiting & Concurrency](#-rate-limiting--concurrency)
+- [🎨 Console Logging & Copyable cURL](#-console-logging--copyable-curl)
+- [🔗 GraphQL Helpers](#-graphql-helpers)
+- [⚙️ Full Configuration Reference](#️-full-configuration-reference)
+
+---
+
+## 🚀 Everyday Usage (Cheat Sheet)
+
+### Basic GET with Path Parameters & Query
 
 ```dart
-// GET request
-final users = await DioRequestHandler.get('users');
+final response = await DioRequestHandler.get(
+  '/posts/{id}/comments',
+  pathParameters: {'id': 10},
+  parameters: {'page': 1, 'limit': 20},
+);
 
-// POST with data
-final created = await DioRequestHandler.post('users', data: userData);
+if (response.isSuccess) {
+  final List comments = response.data;
+  print('Fetched ${comments.length} comments');
+}
+```
 
-// PUT update
-final updated = await DioRequestHandler.put('users/123', data: updates);
+### Basic POST / PUT / PATCH / DELETE
+
+```dart
+// POST JSON
+final postRes = await DioRequestHandler.post(
+  '/users',
+  data: {'name': 'Sarah Connor', 'role': 'Admin'},
+);
+
+// PUT Update
+final putRes = await DioRequestHandler.put(
+  '/users/42',
+  data: {'name': 'John Connor'},
+);
 
 // DELETE
-final deleted = await DioRequestHandler.delete('users/123');
-
-// With authentication
-final profile = await DioRequestHandler.get(
-  'profile',
-  requestOptions: RequestOptionsModel(hasBearerToken: true),
-);
-
-// With caching
-final cached = await DioRequestHandler.get(
-  'static-data',
-  requestOptions: RequestOptionsModel(
-    cacheOptions: CacheOptions(
-      shouldCache: true,
-      cacheDuration: Duration(minutes: 30),
-    ),
-  ),
-);
+final deleteRes = await DioRequestHandler.delete('/users/42');
 ```
 
-#### 🔑 Authentication Cheat Sheet
+---
+
+## 📡 Request Methods & Parameters
+
+All HTTP methods in `DioRequestHandler` (`get`, `post`, `put`, `patch`, `delete`) share the same unified signature:
 
 ```dart
-// Set tokens
-await TokenManager.setTokens(
-  accessToken: 'access_token',
-  refreshToken: 'refresh_token',
-  expiry: DateTime.now().add(Duration(hours: 1)),
-);
-
-// Check if authenticated
-final isAuthenticated = await TokenManager.hasAccessToken();
-
-// Get current token (auto-refreshes if needed)
-final token = await TokenManager.getAccessToken();
-
-// Clear tokens (logout)
-await TokenManager.clearTokens();
+Future<ResponseModel> get(
+  dynamic endpoint, {
+  Map<String, dynamic>? parameters,      // Query parameters (?page=1&sort=desc)
+  Map<String, dynamic>? pathParameters,  // Path placeholders (/users/{id})
+  RequestOptionsModel requestOptions,    // Per-request cache, retry, headers
+  CancelToken? cancelToken,              // Request cancellation token
+});
 ```
 
-#### 📁 File Operations Cheat Sheet
+### Inspecting Responses
+
+Every call returns a `ResponseModel` that never throws uncaught network crashes:
 
 ```dart
-// Upload file (mobile/desktop)
-final upload = await FileHandler.uploadFile('upload', file);
+final response = await DioRequestHandler.get('/dashboard');
 
-// Upload bytes (all platforms)
-final upload = await FileHandler.uploadBytes('upload', bytes, 'file.jpg');
-
-// Download file (mobile/desktop)
-final download = await FileHandler.downloadFile('files/123', '/path/file.pdf');
-
-// Download bytes (all platforms)
-final download = await FileHandler.downloadBytes('files/123');
-
-// Get file information without downloading
-final fileInfo = await FileHandler.getFileInfo('files/123');
+if (response.isSuccess) {
+  // Convenient getters
+  final data = response.data;
+  final statusCode = response.statusCode; // e.g. 200
+  final isCached = response.isFromCache;  // true if served from local cache
+  final curl = response.logCurl;          // copyable cURL command
+} else {
+  // Structured error handling
+  final errorMsg = response.message;      // Clean user-friendly message
+  final statusCode = response.statusCode; // e.g. 404, 500, 499 (cancelled)
+  final errorType = response.errorType;   // e.g. ErrorType.notFound, ErrorType.timeout
+}
 ```
 
-#### 🧪 Testing Cheat Sheet
+### Named Endpoints (Optional)
+
+You can register endpoints centrally to avoid hardcoding paths throughout your app:
 
 ```dart
-// Enable mocking
+EndpointProvider.instance.registerAll({
+  'profile': '/api/v1/user/profile',
+  'updateUser': '/api/v1/user/{id}',
+});
+
+// Use the registered key directly:
+final res = await DioRequestHandler.get('profile');
+```
+
+---
+
+## 🧪 Offline Request Mocking
+
+Test your UI and workflows instantly without waiting for backend APIs or an internet connection:
+
+```dart
+// 1. Enable mock mode anywhere in tests or demo apps:
 MockDioFlow.enableMockMode();
 
-// Mock success response
-MockDioFlow.mockResponse('users', MockResponse.success([...]));
+// 2. Register mock endpoints:
+MockDioFlow.mockResponse(
+  '/users/1',
+  MockResponse.success({
+    'id': 1,
+    'name': 'Sarah Connor',
+    'email': 'sarah@example.com',
+  }),
+);
 
-// Mock error response
-MockDioFlow.mockResponse('users', MockResponse.failure('Error message'));
+// 3. Mock POST or Error responses with custom delay:
+MockDioFlow.mockResponse(
+  '/orders',
+  MockResponse.success({'orderId': 'ord_123'}, statusCode: 201),
+  method: 'POST',
+);
 
-// Mock network error
-MockDioFlow.mockResponse('users', MockResponse.networkError());
+MockDioFlow.mockResponse(
+  '/error-endpoint',
+  MockResponse.failure('Account suspended', statusCode: 403),
+);
 
-// Disable mocking
+// When done:
 MockDioFlow.disableMockMode();
 ```
 
 ---
 
-## 🤝 Contributing
+## 💾 Smart Local Caching
 
-### We love contributions! Help make Dio Flow even better 💪
+Enable instant response caching on GET requests. Subsequent calls with the same parameters return from local cache in **0 ms**:
 
-Contributions are welcome! Whether it's:
+```dart
+final response = await DioRequestHandler.get(
+  '/catalog',
+  parameters: {'category': 'books'},
+  requestOptions: const RequestOptionsModel(
+    cacheOptions: CacheOptions(
+      shouldCache: true,
+      cacheDuration: Duration(minutes: 10), // Cache valid for 10 minutes
+    ),
+  ),
+);
 
-- 🐛 **Bug Reports**: Found an issue? Let us know!
-- ✨ **Feature Requests**: Have an idea? We'd love to hear it!
-- 📖 **Documentation**: Help improve our docs
-- 🔧 **Code Contributions**: Submit a PR!
+if (response.isFromCache) {
+  print('Served instantly from local cache!');
+}
+```
 
-Please read our [Contributing Guide](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
+### Safe Cache Clearing
 
-### 🌟 Contributors
+`ApiClient.clearCache()` safely wipes **only** cache keys created by `dio_flow`, preserving your app's user tokens, theme, and other SharedPreferences data:
 
-Thanks to all our amazing contributors who help make Dio Flow better!
+```dart
+await ApiClient.clearCache();
+```
+
+---
+
+## 🔐 Authentication & Automatic Token Refresh
+
+DioFlow provides a bulletproof token management lifecycle:
+1. Automatically attaches `Authorization: Bearer <token>` to requests marked with `hasBearerToken: true`.
+2. Proactively checks token expiration before sending.
+3. Automatically catches `401 Unauthorized` responses, refreshes the token, and replays the original request once.
+4. **Single-Flight Coordination:** If 10 parallel requests receive a `401`, only **one** refresh request is sent to your backend; the other 9 wait and resume seamlessly with the new token.
+
+### Setup Token Management
+
+```dart
+await TokenManager.initialize();
+
+// Save initial tokens upon user login:
+// (expiry is completely OPTIONAL - pass null if your server doesn't provide one)
+await TokenManager.setTokens(
+  accessToken: 'initial_access_token',
+  refreshToken: 'initial_refresh_token',
+  expiry: DateTime.now().add(const Duration(hours: 2)), // optional
+);
+
+// Register your refresh API logic:
+TokenManager.setRefreshHandler((currentRefreshToken) async {
+  // Use refreshDio or DioRefreshTokenRequestHandle to avoid recursive interceptors:
+  final response = await DioRefreshTokenRequestHandle.post(
+    '/auth/refresh',
+    data: {'refresh_token': currentRefreshToken},
+  );
+
+  if (response.isSuccess) {
+    return RefreshTokenResponse(
+      accessToken: response.data['access_token'],
+      refreshToken: response.data['refresh_token'], // optional
+      expiry: null, // optional
+    );
+  }
+
+  throw ApiException('Session expired');
+});
+```
+
+### Sending Authenticated Requests
+
+Simply set `hasBearerToken: true`:
+
+```dart
+final response = await DioRequestHandler.get(
+  '/user/me',
+  requestOptions: const RequestOptionsModel(hasBearerToken: true),
+);
+```
+
+---
+
+## 📤 File Upload with Live Progress
+
+Upload files, images, or raw byte buffers with a real-time progress callback:
+
+```dart
+// Native (Mobile / Desktop) or Web (Uint8List)
+final bytes = Uint8List.fromList(imageBytes);
+
+final response = await FileHandler.uploadFile(
+  '/media/upload',
+  {'avatar': bytes}, // fieldName -> file or bytes
+  UploadMethodsEnum.post,
+  additionalData: {'userId': '42', 'description': 'Profile image'},
+  onProgress: (sent, total) {
+    final progress = (sent / total) * 100;
+    print('Upload Progress: ${progress.toStringAsFixed(1)}%');
+  },
+);
+```
+
+---
+
+## 📥 File Download
+
+Download binary data (PDFs, images, documents) directly as bytes or plain text:
+
+```dart
+// 1. Download as raw bytes:
+final response = await FileHandler.downloadBytes(
+  '/reports/2026.pdf',
+  UploadMethodsEnum.get, // supports get, post, put, patch
+);
+
+if (response.isSuccess) {
+  final Uint8List fileBytes = response.data;
+  // Save to disk using path_provider or open with open_file
+}
+
+// 2. Download plain text (CSV, Logs, TXT):
+final textResponse = await FileHandler.downloadText(
+  '/logs/daily.csv',
+  UploadMethodsEnum.get,
+);
+```
+
+---
+
+## 🔁 Automatic Retries & Crash Prevention
+
+Configure exponential backoff or retry status codes per request:
+
+```dart
+final response = await DioRequestHandler.get(
+  '/live-feed',
+  requestOptions: const RequestOptionsModel(
+    retryOptions: RetryOptions(
+      maxAttempts: 3,                                // Total attempts (1 = no retry)
+      retryInterval: Duration(milliseconds: 500),    // Wait between attempts
+      retryStatusCodes: [408, 500, 502, 503, 504],   // Status codes to retry
+      retryOnConnectionTimeout: true,
+      retryOnReceiveTimeout: true,
+    ),
+  ),
+);
+```
+
+> **🛡️ Stream-Safe:** DioFlow automatically calls `FormData.clone()` before replaying multipart requests, preventing "Cannot finalize stream multiple times" crashes.
+
+---
+
+## 🚦 Rate Limiting & Concurrency
+
+### Fast & Unblocked by Default
+
+In DioFlow, **requests flow freely without artificial client-side barriers**. Rapid user interactions, tab switching, and parallel dashboard widgets execute smoothly without hitting rate-limit errors.
+
+### Optional Client-Side Rate Limiter
+
+If your specific backend requires strict client-side throttling to prevent abuse, you can opt-in during initialization:
+
+```dart
+DioFlowConfig.initialize(
+  baseUrl: 'https://api.example.com',
+  enableRateLimit: true,                            // Defaults to false
+  rateLimitMaxRequests: 60,                         // Allowed requests
+  rateLimitInterval: const Duration(minutes: 1),    // Time window
+);
+```
+
+---
+
+## 🎨 Console Logging & Copyable cURL
+
+DioFlow's internal logger is **silent by default** so it never spams your development console. Enable it per request when debugging:
+
+```dart
+final response = await DioRequestHandler.post(
+  '/login',
+  data: {'email': 'user@example.com', 'password': 'mySecretPassword'},
+  requestOptions: const RequestOptionsModel(
+    logModel: LogModel(defaultLog: true),
+  ),
+);
+```
+
+### 🔒 Built-In Security Masking
+
+DioFlow automatically masks sensitive fields case-insensitively across headers, query parameters, request bodies, and cURL commands:
+- `Authorization`, `token`, `accessToken`, `refreshToken`
+- `password`, `secret`, `apiKey`, `cookie`, `credential`
+
+The generated cURL commands are clean, safe to copy into bug reports, and guaranteed not to expose user credentials.
+
+---
+
+## 🔗 GraphQL Helpers
+
+Execute GraphQL queries, mutations, and batch operations with built-in typed response models:
+
+```dart
+final response = await GraphQLHandler.query(
+  r'''
+    query GetUser($id: ID!) {
+      user(id: $id) {
+        id
+        name
+        email
+      }
+    }
+  ''',
+  variables: {'id': '42'},
+);
+
+if (response.isSuccess) {
+  print('User: ${response.data['user']}');
+}
+```
+
+---
+
+## ⚙️ Full Configuration Reference
+
+### `DioFlowConfig.initialize` Options
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `baseUrl` | `String` | **required** | The root endpoint for all HTTP requests |
+| `connectTimeout` | `Duration` | `30s` | Connection timeout |
+| `receiveTimeout` | `Duration` | `30s` | Receive timeout |
+| `sendTimeout` | `Duration` | `30s` | Send timeout |
+| `enableRateLimit` | `bool` | `false` | Enable client-side request rate limiter |
+| `rateLimitMaxRequests`| `int` | `60` | Max requests within interval |
+| `rateLimitInterval` | `Duration` | `1m` | Time window for rate limiter |
+| `customInterceptors` | `List<Interceptor>?` | `null` | Additional custom Dio interceptors |
+
+### `RequestOptionsModel` Options
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `hasBearerToken` | `bool` | `false` | Automatically inject active Bearer token |
+| `customHeaders` | `Map<String, dynamic>?` | `null` | Per-request custom headers |
+| `cacheOptions` | `CacheOptions` | `noApiCache` | Cache TTL and policies |
+| `retryOptions` | `RetryOptions` | `defaultOptions` | Retry attempts and status codes |
+| `logModel` | `LogModel` | `disabledAllLog` | Log console output and cURL |
+| `responseType` | `ResponseType` | `json` | Response parsing (`json`, `bytes`, `plain`) |
 
 ---
 
 ## 📄 License
 
-### 📜 MIT License - Free for everyone, everywhere
-
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-Made with ❤️ by the Flutter community
-
----
-
-### 🌟 Star us on GitHub if Dio Flow helped you
-
-[![GitHub stars](https://img.shields.io/github/stars/Moein-dev/dio_flow?style=social)](https://github.com/Moein-dev/dio_flow)
-
-Happy coding! 🚀

@@ -24,6 +24,8 @@ class SuccessResponseModel extends ResponseModel {
     bool isRefreshHandle = false,
     Map<String, dynamic>? headers,
     Map<String, dynamic>? extra,
+    Duration? duration,
+    String? method,
   }) {
     // Extract status code
     final statusCode =
@@ -53,15 +55,17 @@ class SuccessResponseModel extends ResponseModel {
       DioFlowLog(
         logModel: logModel,
         url: DioFlowConfig.instance.baseUrl + endpointPath!,
+        method: method,
         type: DioLogType.response,
         statusCode: statusCode,
         message: message,
-        data: data,
+        data: json,
         headers: headers,
         logCurl: logCurl,
         isCache: fromCache,
         extra: extra,
         isRefreshHandle: isRefreshHandle,
+        duration: duration,
       ).log();
     }
 

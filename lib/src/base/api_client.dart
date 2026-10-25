@@ -49,13 +49,15 @@ class ApiClient {
     dio.interceptors.addAll([
       MetricsInterceptor(),
       CacheInterceptor(prefs: _sharedPreferences!),
-      RateLimitInterceptor(
-        maxRequests: 30,
-        interval: const Duration(minutes: 1),
-      ),
+      if (config.enableRateLimit)
+        RateLimitInterceptor(
+          maxRequests: config.rateLimitMaxRequests,
+          interval: config.rateLimitInterval,
+        ),
     ]);
 
-    if (config.customInterceptors != null && config.customInterceptors!.isNotEmpty) {
+    if (config.customInterceptors != null &&
+        config.customInterceptors!.isNotEmpty) {
       dio.interceptors.addAll(config.customInterceptors!);
     }
 
@@ -80,11 +82,14 @@ class ApiClient {
 
   static Future<void> clearCache() async {
     _sharedPreferences ??= await SharedPreferences.getInstance();
-    await _sharedPreferences!.clear();
+    await CacheInterceptor.clear(_sharedPreferences!);
   }
 
   static void reset() {
-    _dio?.close();
+    _dio?.close(force: true);
+    _refreshDio?.close(force: true);
     _dio = null;
+    _refreshDio = null;
+    _sharedPreferences = null;
   }
 }

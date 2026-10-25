@@ -1,0 +1,10 @@
+.dart_tool/
+.git/
+.github/
+.idea/
+build/
+coverage/
+cookies/
+COMPLETION_SUMMARY.md
+pubspec.lock
+*.iml

@@ -1,50 +1,44 @@
-# dio_flow Example
+# DioFlow Example App
 
-This example demonstrates the pagination, JSON handling, and model extension features found in the `dio_flow` package. The example is a Flutter application that shows how these features can be used in a real application.
+An interactive Flutter demonstration app showcasing **DioFlow**'s core features including:
+- **Mock Mode**: Offline-ready request mocking without needing an active backend.
+- **GET & POST**: Structured typed responses with automatic status handling.
+- **Intelligent Caching**: In-memory and local response caching with instant cache hits.
+- **File Upload**: Multipart and byte uploads with a real-time progress indicator.
+- **Error Handling**: Graceful error parsing without uncaught crashes.
+- **cURL Generation**: Formatted, masked, and copyable cURL commands for every request.
 
-## Features Demonstrated
+---
 
-1. **Pagination**
-   - Infinite scrolling with automatic pagination
-   - Handling loading states and error scenarios
-   - Supporting next/previous page navigation
+## 🚀 Running the Example
 
-2. **JSON Utilities**
-   - Safe JSON parsing
-   - Accessing nested values with dot notation
-   - Normalizing inconsistent JSON keys
+Run the application on your device or emulator:
 
-3. **Model Extensions**
-   - Converting JSON data to models
-   - Type-safe property access
-
-## Getting Started
-
-1. Clone the repository
-2. Get dependencies: `flutter pub get`
-3. Run the example: `flutter run`
-
-The application has three main tabs:
-
-- **Posts**: Demonstrates pagination by loading posts from JSONPlaceholder API
-- **Users**: Shows how to fetch and display a list of users
-- **JSON Utils**: Interactive examples of JSON handling utilities
-
-## Using dio_flow in Your App
-
-This example is a simplified version of what's available in the full `dio_flow` package. The actual package provides:
-
-- A complete API client with caching, authentication, and retry logic
-- Endpoint registration and management
-- HTTP interceptors for logging and header manipulation
-- Error handling with classified error types
-- Comprehensive pagination utilities
-
-To use dio_flow in your app, add it to your pubspec.yaml:
-
-```yaml
-dependencies:
-  dio_flow: ^1.0.0
+```bash
+cd example
+flutter run
 ```
 
-For more details, see the [dio_flow documentation](https://github.com/yourusername/dio_flow).
+Or run widget tests:
+
+```bash
+flutter test
+```
+
+---
+
+## 🧪 Features Demonstrated in the App
+
+1. **Mock Mode Toggle**: Switch between offline mock responses and actual server requests with a single toggle (`MockDioFlow.enableMockMode()`).
+2. **GET User**: Demonstrates a standard GET request parsing typed JSON models.
+3. **POST User**: Demonstrates payload submission and handling `201 Created` status codes.
+4. **Cached Feed**: Tapping once fetches the feed; tapping again serves it instantly from local cache (`fromCache: true`).
+5. **Upload File with Progress**: Demonstrates `FileHandler.uploadBytes` emitting live percentages to a `LinearProgressIndicator`.
+6. **Error Simulation**: Demonstrates `FailedResponseModel` converting non-200 responses safely into user-friendly messages.
+7. **Copy cURL & JSON**: Instant one-click clipboard copying for quick debugging.
+
+---
+
+## 📂 Additional Examples
+
+- `lib/advanced_features_example.dart`: Programmatic examples covering GraphQL queries, batch requests, and retry scenarios.

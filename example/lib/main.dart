@@ -1,34 +1,72 @@
-import 'package:flutter/material.dart';
-import 'package:dio_flow/dio_flow.dart';
+import 'dart:convert';
 
-void main() async{
+import 'package:dio_flow/dio_flow.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Initialize the API client when the app starts
-  await _initApiClient();
+  await setupDioFlow();
   runApp(const MyApp());
 }
 
-// Initialize the API client with configuration
-Future<void> _initApiClient() async{
-  // Configure the API client with base URL and timeouts
+Future<void> setupDioFlow() async {
   DioFlowConfig.initialize(
-    baseUrl: 'https://jsonplaceholder.typicode.com',
-    connectTimeout: const Duration(seconds: 5),
-    receiveTimeout: const Duration(seconds: 3),
-    sendTimeout: const Duration(seconds: 3),
+    baseUrl: 'https://api.example.com',
+    connectTimeout: const Duration(seconds: 10),
+    receiveTimeout: const Duration(seconds: 10),
+    sendTimeout: const Duration(seconds: 10),
   );
   await ApiClient.initialize();
-  // Register endpoints that will be used in the app
-  _registerApiEndpoints();
+  registerMockResponses();
 }
 
-// Register API endpoints
-void _registerApiEndpoints() {
-  // Register individual endpoints
-  EndpointProvider.instance.register('posts', '/posts');
-  EndpointProvider.instance.register('users', '/users');
-  EndpointProvider.instance.register('post', '/posts/{id}');
-  EndpointProvider.instance.register('user', '/users/{id}');
+void registerMockResponses() {
+  MockDioFlow.enableMockMode();
+
+  MockDioFlow.mockResponse(
+    '/users/1',
+    MockResponse.success({
+      'id': 1,
+      'name': 'Sarah Connor',
+      'email': 'sarah@example.com',
+      'role': 'Administrator',
+    }),
+  );
+
+  MockDioFlow.mockResponse(
+    '/users',
+    MockResponse.success({
+      'id': 42,
+      'name': 'John Doe',
+      'role': 'Developer',
+      'created': true,
+    }, statusCode: 201),
+    method: 'POST',
+  );
+
+  MockDioFlow.mockResponse(
+    '/feed',
+    MockResponse.success([
+      {'id': 101, 'title': 'Welcome to DioFlow', 'author': 'Moein'},
+      {'id': 102, 'title': 'Seamless Flutter Networking', 'author': 'Team'},
+    ]),
+  );
+
+  MockDioFlow.mockResponse(
+    '/upload',
+    MockResponse.success({
+      'fileId': 'upl_2026',
+      'status': 'uploaded',
+      'bytesReceived': 2048,
+    }),
+    method: 'POST',
+  );
+
+  MockDioFlow.mockResponse(
+    '/not-found',
+    MockResponse.failure('User resource does not exist', statusCode: 404),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -37,640 +75,397 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Dio Flow Demo',
+      title: 'DioFlow Demo',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
         useMaterial3: true,
       ),
-      home: const MyHomePage(title: 'Dio Flow Demo'),
+      home: const DemoHomePage(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  final String title;
+class DemoHomePage extends StatefulWidget {
+  const DemoHomePage({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<DemoHomePage> createState() => _DemoHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  final List<Tab> _tabs = const [
-    Tab(text: 'Posts', icon: Icon(Icons.article)),
-    Tab(text: 'Users', icon: Icon(Icons.people)),
-    Tab(text: 'JSON Utils', icon: Icon(Icons.data_object)),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: _tabs.length,
-      child: Scaffold(
-        appBar: AppBar(
-          backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-          title: Text(widget.title),
-          bottom: TabBar(tabs: _tabs),
-        ),
-        body: TabBarView(children: [PostsPage(), UsersPage(), JsonUtilsPage()]),
-      ),
-    );
-  }
-}
-
-class PostsPage extends StatefulWidget {
-  const PostsPage({super.key});
-
-  @override
-  State createState() => _PostsPageState();
-}
-
-class _PostsPageState extends State<PostsPage> {
-  List<Post> _posts = [];
+class _DemoHomePageState extends State<DemoHomePage> {
+  bool _mockMode = true;
+  bool _enableLogs = true;
   bool _isLoading = false;
-  String _error = '';
-  int _currentPage = 1;
-  bool _hasMorePages = true;
-  final int _pageSize = 10;
+  double? _uploadProgress;
 
-  @override
-  void initState() {
-    super.initState();
-    _fetchInitialPosts();
-  }
+  int? _lastStatusCode;
+  Duration? _lastDuration;
+  bool _lastFromCache = false;
+  String _lastResponseJson = 'Tap any button above to make an API request.';
+  String? _lastCurl;
 
-  Future<void> _fetchInitialPosts() async {
+  LogModel get _logModel =>
+      _enableLogs ? const LogModel(defaultLog: true) : LogModel.disabledAllLog;
+
+  Future<void> _executeRequest(
+    String label,
+    Future<ResponseModel> Function() action,
+  ) async {
     setState(() {
       _isLoading = true;
-      _error = '';
+      _uploadProgress = null;
     });
 
+    final stopwatch = Stopwatch()..start();
     try {
-      // Use dio_flow to fetch posts
-      final response = await DioRequestHandler.get(
-        'posts',
-        parameters: {'_page': _currentPage, '_limit': _pageSize},
-      );
+      final response = await action();
+      stopwatch.stop();
 
-      // Handle the response using ResponseModel
-      if (response is SuccessResponseModel) {
-        final data = response.data as List;
-        setState(() {
-          _posts =
-              data
-                  .map((json) => Post.fromJson(json as Map<String, dynamic>))
-                  .toList();
-          _isLoading = false;
-
-          // For JSONPlaceholder API, we use a workaround to get pagination info
-          // In a real app, you would use response.meta for pagination
-          _hasMorePages = data.length >= _pageSize;
-        });
-      } else {
-        // Handle error response
-        final errorResponse = response as FailedResponseModel;
-        throw Exception('Failed to load posts: ${errorResponse.message}');
-      }
-    } catch (e) {
       setState(() {
-        _error = e.toString();
+        _lastStatusCode = response.statusCode;
+        _lastDuration = stopwatch.elapsed;
+        _lastFromCache = response.isFromCache;
+        _lastCurl = response.logCurl;
+
+        final rawData = response.data;
+        if (rawData is Map || rawData is List) {
+          _lastResponseJson = const JsonEncoder.withIndent('  ').convert(rawData);
+        } else if (rawData != null) {
+          _lastResponseJson = rawData.toString();
+        } else {
+          _lastResponseJson = response.message ?? 'No data returned';
+        }
+      });
+    } catch (e) {
+      stopwatch.stop();
+      setState(() {
+        _lastStatusCode = 500;
+        _lastDuration = stopwatch.elapsed;
+        _lastResponseJson = 'Unexpected error: $e';
+      });
+    } finally {
+      setState(() {
         _isLoading = false;
       });
     }
   }
 
-  Future<void> _loadMorePosts() async {
-    if (!_hasMorePages || _isLoading) return;
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      _currentPage++;
-
-      // Use dio_flow to fetch the next page
-      final response = await DioRequestHandler.get(
-        'posts',
-        parameters: {'_page': _currentPage, '_limit': _pageSize},
+  void _onGetUser() {
+    _executeRequest('GET /users/1', () {
+      return DioRequestHandler.get(
+        '/users/1',
+        requestOptions: RequestOptionsModel(logModel: _logModel),
       );
+    });
+  }
 
-      if (response is SuccessResponseModel) {
-        final data = response.data as List;
-        final newPosts =
-            data
-                .map((json) => Post.fromJson(json as Map<String, dynamic>))
-                .toList();
+  void _onPostUser() {
+    _executeRequest('POST /users', () {
+      return DioRequestHandler.post(
+        '/users',
+        data: {'name': 'John Doe', 'role': 'Developer'},
+        requestOptions: RequestOptionsModel(logModel: _logModel),
+      );
+    });
+  }
 
-        setState(() {
-          _posts = [..._posts, ...newPosts];
-          _isLoading = false;
+  void _onGetCachedFeed() {
+    _executeRequest('GET /feed (Cached)', () {
+      return DioRequestHandler.get(
+        '/feed',
+        requestOptions: RequestOptionsModel(
+          logModel: _logModel,
+          cacheOptions: const CacheOptions(
+            shouldCache: true,
+            cacheDuration: Duration(minutes: 2),
+          ),
+        ),
+      );
+    });
+  }
 
-          // For JSONPlaceholder API, determine if there are more pages based on returned data
-          _hasMorePages = newPosts.length >= _pageSize;
-        });
-      } else {
-        // Handle error response
-        final errorResponse = response as FailedResponseModel;
-        throw Exception('Failed to load more posts: ${errorResponse.message}');
-      }
-    } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _isLoading = false;
-      });
-    }
+  void _onSimulateUpload() {
+    _executeRequest('Upload File', () async {
+      final sampleBytes = Uint8List.fromList(List.generate(2048, (i) => i % 256));
+      return FileHandler.uploadFile(
+        '/upload',
+        {'document': sampleBytes},
+        UploadMethodsEnum.post,
+        requestOptions: RequestOptionsModel(logModel: _logModel),
+        onProgress: (sent, total) {
+          setState(() {
+            _uploadProgress = total > 0 ? sent / total : 1.0;
+          });
+        },
+      );
+    });
+  }
+
+  void _onSimulateError() {
+    _executeRequest('Simulate 404', () {
+      return DioRequestHandler.get(
+        '/not-found',
+        requestOptions: RequestOptionsModel(logModel: _logModel),
+      );
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_error.isNotEmpty) {
-      return Center(
-        child: Text('Error: $_error', style: TextStyle(color: Colors.red)),
-      );
-    }
+    final theme = Theme.of(context);
 
-    return NotificationListener<ScrollNotification>(
-      onNotification: (ScrollNotification scrollInfo) {
-        if (scrollInfo.metrics.pixels == scrollInfo.metrics.maxScrollExtent) {
-          _loadMorePosts();
-        }
-        return true;
-      },
-      child: ListView.builder(
-        itemCount: _posts.length + (_isLoading ? 1 : 0),
-        itemBuilder: (context, index) {
-          if (index == _posts.length) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          final post = _posts[index];
-          return Card(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            elevation: 2,
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('DioFlow Demo'),
+        centerTitle: true,
+        backgroundColor: theme.colorScheme.inversePrimary,
+        elevation: 2,
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          // Control Panel Card
+          Card(
+            elevation: 1,
             child: Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SwitchListTile(
+                    title: const Text('Mock Mode'),
+                    subtitle: Text(
+                      _mockMode
+                          ? 'Requests return instant mock responses (offline-ready)'
+                          : 'Requests contact real server at https://api.example.com',
+                      style: theme.textTheme.bodySmall,
+                    ),
+                    value: _mockMode,
+                    activeThumbColor: theme.colorScheme.primary,
+                    onChanged: (val) {
+                      setState(() {
+                        _mockMode = val;
+                        if (val) {
+                          MockDioFlow.enableMockMode();
+                        } else {
+                          MockDioFlow.disableMockMode();
+                        }
+                      });
+                    },
+                  ),
+                  const Divider(height: 1),
+                  SwitchListTile(
+                    title: const Text('Debug Logging'),
+                    subtitle: Text(
+                      _enableLogs
+                          ? 'Prints formatted, masked cURL and summaries to console'
+                          : 'Console output stays completely silent',
+                      style: theme.textTheme.bodySmall,
+                    ),
+                    value: _enableLogs,
+                    activeThumbColor: theme.colorScheme.primary,
+                    onChanged: (val) {
+                      setState(() {
+                        _enableLogs = val;
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Action Buttons Card
+          Card(
+            elevation: 1,
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    post.title,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    'Network Operations',
+                    style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(post.body),
-                  const SizedBox(height: 4),
-                  Align(
-                    alignment: Alignment.bottomRight,
-                    child: Text(
-                      'Post ID: ${post.id}',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      ElevatedButton.icon(
+                        key: const Key('get-user-button'),
+                        onPressed: _isLoading ? null : _onGetUser,
+                        icon: const Icon(Icons.download, size: 18),
+                        label: const Text('GET User'),
+                      ),
+                      ElevatedButton.icon(
+                        key: const Key('post-user-button'),
+                        onPressed: _isLoading ? null : _onPostUser,
+                        icon: const Icon(Icons.upload, size: 18),
+                        label: const Text('POST User'),
+                      ),
+                      ElevatedButton.icon(
+                        key: const Key('cached-feed-button'),
+                        onPressed: _isLoading ? null : _onGetCachedFeed,
+                        icon: const Icon(Icons.cached, size: 18),
+                        label: const Text('Cached Feed'),
+                      ),
+                      ElevatedButton.icon(
+                        key: const Key('upload-file-button'),
+                        onPressed: _isLoading ? null : _onSimulateUpload,
+                        icon: const Icon(Icons.attach_file, size: 18),
+                        label: const Text('Upload File'),
+                      ),
+                      OutlinedButton.icon(
+                        key: const Key('error-button'),
+                        onPressed: _isLoading ? null : _onSimulateError,
+                        icon: const Icon(Icons.error_outline, size: 18),
+                        label: const Text('Test 404 Error'),
+                      ),
+                    ],
                   ),
+                  if (_isLoading) ...[
+                    const SizedBox(height: 14),
+                    LinearProgressIndicator(value: _uploadProgress),
+                    if (_uploadProgress != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          'Upload Progress: ${(_uploadProgress! * 100).toInt()}%',
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.bodySmall,
+                        ),
+                      ),
+                  ],
                 ],
               ),
             ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-class UsersPage extends StatefulWidget {
-  const UsersPage({super.key});
-
-  @override
-  State createState() => _UsersPageState();
-}
-
-class _UsersPageState extends State<UsersPage> {
-  List<User> _users = [];
-  bool _isLoading = true;
-  String _error = '';
-
-  @override
-  void initState() {
-    super.initState();
-    _fetchUsers();
-  }
-
-  Future<void> _fetchUsers() async {
-    try {
-      // Use dio_flow to fetch users
-      final response = await DioRequestHandler.get('users');
-
-      if (response is SuccessResponseModel) {
-        final data = response.data as List;
-
-        setState(() {
-          // Convert JSON to models
-          _users = List<User>.from(
-            data.map((item) => User.fromJson(item as Map<String, dynamic>)),
-          );
-          _isLoading = false;
-        });
-      } else {
-        // Handle error response
-        final errorResponse = response as FailedResponseModel;
-        throw Exception('Failed to load users: ${errorResponse.message}');
-      }
-    } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _isLoading = false;
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (_error.isNotEmpty) {
-      return Center(
-        child: Text('Error: $_error', style: TextStyle(color: Colors.red)),
-      );
-    }
-
-    return ListView.builder(
-      itemCount: _users.length,
-      itemBuilder: (context, index) {
-        final user = _users[index];
-        return Card(
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: ListTile(
-            leading: CircleAvatar(child: Text(user.name[0])),
-            title: Text(user.name),
-            subtitle: Text(user.email),
-            trailing: Text('ID: ${user.id}'),
           ),
-        );
-      },
-    );
-  }
-}
+          const SizedBox(height: 12),
 
-class JsonUtilsPage extends StatefulWidget {
-  const JsonUtilsPage({super.key});
-
-  @override
-  State createState() => _JsonUtilsPageState();
-}
-
-class _JsonUtilsPageState extends State<JsonUtilsPage> {
-  // Sample data for demos
-  final _sampleJson = '''
-  {
-    "user": {
-      "profile": {
-        "name": "John Doe",
-        "age": 30,
-        "address": {
-          "street": "123 Main St",
-          "city": "New York",
-          "zip": "10001"
-        }
-      },
-      "settings": {
-        "notifications": true,
-        "theme": "dark"
-      }
-    },
-    "stats": {
-      "visits": 243,
-      "favorites": 15,
-      "last_login": "2023-05-20T14:30:00Z"
-    }
-  }
-  ''';
-
-  late Map<String, dynamic> _parsedJson;
-  String _extractedValue = '';
-  String _normalizedResult = '';
-
-  @override
-  void initState() {
-    super.initState();
-    // Parse JSON safely using dio_flow's JsonUtils
-    _parsedJson = JsonUtils.tryParseJson(_sampleJson) ?? {};
-  }
-
-  void _extractNestedValue(String path) {
-    // Use dio_flow's JsonUtils for nested value extraction
-    final value = JsonUtils.getNestedValue(_parsedJson, path, 'Not found');
-
-    setState(() {
-      _extractedValue = value.toString();
-    });
-  }
-
-  void _demonstrateNormalization() {
-    final weirdKeys = {
-      'First_Name': 'Alice',
-      'LAST-NAME': 'Smith',
-      'phone_NUMBER': '123-456-7890',
-      'EMAIL_ADDRESS': 'alice.smith@example.com',
-    };
-
-    // Use dio_flow's JsonUtils for key normalization
-    final normalized = JsonUtils.normalizeJsonKeys(
-      weirdKeys,
-      keysToLowerCase: true,
-    );
-
-    setState(() {
-      _normalizedResult = normalized.toString();
-    });
-  }
-
-  Future<void> _demonstratePagination() async {
-    try {
-      if (!mounted) return;
-
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (BuildContext context) {
-          return const AlertDialog(
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(height: 16),
-                Text('Fetching all pages...'),
-              ],
-            ),
-          );
-        },
-      );
-
-      // Use dio_flow's PaginationUtils to fetch all posts
-      final response = await PaginationUtils.fetchAllPages(
-        'posts',
-        parameters: {'_limit': 20},
-        pageParamName: '_page',
-        perPageParamName: '_limit',
-        startPage: 1,
-      );
-
-      if (!mounted) return;
-
-      if (response is SuccessResponseModel) {
-        final data = response.data as List;
-        final allPosts =
-            data
-                .map((item) => Post.fromJson(item as Map<String, dynamic>))
-                .toList();
-
-        Navigator.of(context).pop(); // Close loading dialog
-
-        // Show result dialog
-        if (mounted) {
-          showDialog(
-            context: context,
-            builder: (BuildContext context) {
-              return AlertDialog(
-                title: const Text('Pagination Complete'),
-                content: Text(
-                  'Successfully fetched ${allPosts.length} posts across multiple pages.',
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('OK'),
-                  ),
-                ],
-              );
-            },
-          );
-        }
-      } else {
-        throw Exception('Failed to fetch all pages');
-      }
-    } catch (e) {
-      if (!mounted) return;
-
-      Navigator.of(context).pop(); // Close loading dialog
-
-      // Show error dialog
-      if (mounted) {
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: const Text('Error'),
-              content: Text('Failed to fetch all pages: $e'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('OK'),
-                ),
-              ],
-            );
-          },
-        );
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'JSON Utilities Demo',
-            style: Theme.of(context).textTheme.headlineSmall,
-          ),
-          const SizedBox(height: 16),
-
-          // Sample JSON display
-          Text('Sample JSON:', style: Theme.of(context).textTheme.titleMedium),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade200,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            width: double.infinity,
-            child: Text(_sampleJson),
-          ),
-          const SizedBox(height: 24),
-
-          // Nested value extraction
-          Text(
-            'Extract Nested Values:',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              ActionChip(
-                label: const Text('User Name'),
-                onPressed: () => _extractNestedValue('user.profile.name'),
-              ),
-              ActionChip(
-                label: const Text('City'),
-                onPressed:
-                    () => _extractNestedValue('user.profile.address.city'),
-              ),
-              ActionChip(
-                label: const Text('Theme'),
-                onPressed: () => _extractNestedValue('user.settings.theme'),
-              ),
-              ActionChip(
-                label: const Text('Visit Count'),
-                onPressed: () => _extractNestedValue('stats.visits'),
-              ),
-              ActionChip(
-                label: const Text('Non-existent'),
-                onPressed: () => _extractNestedValue('user.profile.phone'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          if (_extractedValue.isNotEmpty)
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.blue.shade100,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              width: double.infinity,
-              child: Text('Extracted value: $_extractedValue'),
-            ),
-          const SizedBox(height: 24),
-
-          // Key normalization
-          Text(
-            'JSON Key Normalization:',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 8),
-          ElevatedButton(
-            onPressed: _demonstrateNormalization,
-            child: const Text('Normalize Inconsistent Keys'),
-          ),
-          const SizedBox(height: 8),
-          if (_normalizedResult.isNotEmpty)
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.green.shade100,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              width: double.infinity,
-              child: Text('Normalized result: $_normalizedResult'),
-            ),
-
-          const SizedBox(height: 24),
-
-          // Information about dio_flow
+          // Response Details Card
           Card(
-            color: Colors.purple.shade50,
+            elevation: 1,
             child: Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'About dio_flow Package',
-                    style: Theme.of(context).textTheme.titleMedium,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Response Inspector',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      if (_lastStatusCode != null)
+                        Chip(
+                          avatar: Icon(
+                            _lastStatusCode! < 400
+                                ? Icons.check_circle
+                                : Icons.cancel,
+                            size: 16,
+                            color: _lastStatusCode! < 400
+                                ? Colors.green
+                                : Colors.red,
+                          ),
+                          label: Text(
+                            'Status $_lastStatusCode',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: _lastStatusCode! < 400
+                                  ? Colors.green.shade800
+                                  : Colors.red.shade800,
+                            ),
+                          ),
+                          backgroundColor: _lastStatusCode! < 400
+                              ? Colors.green.shade50
+                              : Colors.red.shade50,
+                          padding: EdgeInsets.zero,
+                        ),
+                    ],
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'dio_flow provides powerful utilities for API integration:',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                  const SizedBox(height: 8),
-                  _buildFeatureRow(
-                    context,
-                    'API Client',
-                    'Simplified API requests with endpoint registration',
-                  ),
-                  _buildFeatureRow(
-                    context,
-                    'JSON Utilities',
-                    'Safe parsing, dot notation access, key normalization',
-                  ),
-                  _buildFeatureRow(
-                    context,
-                    'Pagination Helpers',
-                    'Fetch all pages, handle metadata, process paginated responses',
-                  ),
-                  _buildFeatureRow(
-                    context,
-                    'Model Extensions',
-                    'Type-safe conversions from JSON to models and collections',
-                  ),
-                  _buildFeatureRow(
-                    context,
-                    'Response Handling',
-                    'Standardized response models with clear success and error states',
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 24),
-
-          // Add a demonstration of pagination helper
-          Card(
-            color: Colors.amber.shade50,
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Pagination Utils Usage',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'PaginationUtils can be used to automatically fetch all pages:',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                  const SizedBox(height: 8),
-                  ElevatedButton(
-                    onPressed: () => _demonstratePagination(),
-                    child: const Text('Demo Pagination'),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '''
-// Example code:
-final response = await PaginationUtils.fetchAllPages(
-  'posts',
-  parameters: {
-    '_limit': 20,
-  },
-  pageParamName: '_page',
-  perPageParamName: '_limit',
-  startPage: 1,
-);
-
-if (response is SuccessResponseModel) {
-  final data = response.data as List;
-  final allPosts = data.map((item) => Post.fromJson(item as Map<String, dynamic>)).toList();
-  print('Fetched \${allPosts.length} posts across multiple pages');
-}
-''',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontFamily: 'monospace',
-                      backgroundColor: Colors.grey.shade200,
+                  if (_lastDuration != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4, bottom: 8),
+                      child: Row(
+                        children: [
+                          Icon(Icons.timer_outlined, size: 16, color: theme.hintColor),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Duration: ${_lastDuration!.inMilliseconds} ms',
+                            style: theme.textTheme.bodySmall,
+                          ),
+                          if (_lastFromCache) ...[
+                            const SizedBox(width: 12),
+                            const Icon(Icons.flash_on, size: 16, color: Colors.amber),
+                            Text(
+                              'Served from Cache',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: Colors.amber.shade900,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
+                  const SizedBox(height: 6),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: theme.dividerColor,
+                      ),
+                    ),
+                    child: SelectableText(
+                      _lastResponseJson,
+                      style: const TextStyle(
+                        fontFamily: 'monospace',
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      if (_lastCurl != null && _lastCurl!.isNotEmpty)
+                        TextButton.icon(
+                          onPressed: () {
+                            Clipboard.setData(ClipboardData(text: _lastCurl!));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('cURL command copied to clipboard!'),
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.terminal, size: 16),
+                          label: const Text('Copy cURL'),
+                        ),
+                      TextButton.icon(
+                        onPressed: () {
+                          Clipboard.setData(ClipboardData(text: _lastResponseJson));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Response JSON copied to clipboard!'),
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.copy, size: 16),
+                        label: const Text('Copy JSON'),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -678,90 +473,6 @@ if (response is SuccessResponseModel) {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildFeatureRow(
-    BuildContext context,
-    String title,
-    String description,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.check_circle, color: Colors.green, size: 16),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
-                ),
-                Text(description, style: Theme.of(context).textTheme.bodySmall),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// Model classes
-class Post {
-  final int id;
-  final int userId;
-  final String title;
-  final String body;
-
-  Post({
-    required this.id,
-    required this.userId,
-    required this.title,
-    required this.body,
-  });
-
-  factory Post.fromJson(Map<String, dynamic> json) {
-    return Post(
-      id: json['id'],
-      userId: json['userId'],
-      title: json['title'],
-      body: json['body'],
-    );
-  }
-}
-
-class User {
-  final int id;
-  final String name;
-  final String username;
-  final String email;
-  final String phone;
-  final String website;
-
-  User({
-    required this.id,
-    required this.name,
-    required this.username,
-    required this.email,
-    required this.phone,
-    required this.website,
-  });
-
-  factory User.fromJson(Map<String, dynamic> json) {
-    return User(
-      id: json['id'],
-      name: json['name'],
-      username: json['username'],
-      email: json['email'],
-      phone: json['phone'] ?? '',
-      website: json['website'] ?? '',
     );
   }
 }

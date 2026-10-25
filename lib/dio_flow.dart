@@ -2,7 +2,6 @@
 /// authentication, retry logic, and more.
 library;
 
-
 export 'src/config/dio_flow_config.dart';
 export 'src/base/api_client.dart';
 export 'src/base/api_endpoint_interface.dart';
@@ -17,8 +16,10 @@ export 'src/models/response/meta_model.dart';
 export 'src/models/response/links_model.dart';
 export 'src/models/response/refresh_token_response.dart';
 export 'src/models/request_options_model.dart';
+export 'src/models/log_model.dart';
 export 'src/models/retry_options.dart';
 export 'src/models/cache_options_model.dart';
+export 'src/interceptors/rate_limit_interceptor.dart';
 export 'src/models/api_exception.dart';
 export 'src/utils/token_manager.dart';
 export 'src/utils/network_checker.dart';

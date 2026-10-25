@@ -4,7 +4,6 @@ import 'package:dio/dio.dart';
 import 'package:dio_flow/dio_flow.dart';
 import 'package:dio_flow/src/handlers/dio_flow_log.dart';
 import 'package:dio_flow/src/handlers/dio_hndler_helper.dart';
-import 'package:dio_flow/src/models/log_model.dart';
 
 /// for refreshToken Handle
 class DioRefreshTokenRequestHandle {
@@ -15,6 +14,8 @@ class DioRefreshTokenRequestHandle {
     RequestOptionsModel requestOptions = const RequestOptionsModel(),
     String? methodOverride,
   }) async {
+    final logModel = requestOptions.logModel ?? LogModel.disabledAllLog;
+
     /// Prepare Header
     Map<String, dynamic> headers = await DioHndlerHelper.prepareHeaders(
       hasBearerToken: false,
@@ -28,30 +29,38 @@ class DioRefreshTokenRequestHandle {
     final dioOptions = requestOptions.toDioOptions(method: methodOverride);
     dioOptions.headers = {...dioOptions.headers ?? {}, ...headers};
 
-    final curlCommand = DioHndlerHelper.curlCommand(
-      methodOverride: methodOverride!,
-      baseUrl: DioFlowConfig.instance.baseUrl,
-      endpointPath: endpointPath,
-      data: data,
-      parameters: parameters,
-      headers: headers,
-    );
+    final curlCommand =
+        logModel.defaultLog
+            ? DioHndlerHelper.curlCommand(
+              methodOverride: methodOverride!,
+              baseUrl: DioFlowConfig.instance.baseUrl,
+              endpointPath: endpointPath,
+              data: data,
+              parameters: parameters,
+              headers: headers,
+              includeSensitiveData: logModel.includeSensitiveDataInCopyLogs,
+            )
+            : '';
 
-    DioFlowLog(
-      logModel: LogModel.disabledAllLog,
-      type: DioLogType.request,
-      url: DioFlowConfig.instance.baseUrl + endpointPath,
-      method: dioOptions.method,
-      data: data,
-      headers: Map<String, dynamic>.from(dioOptions.headers ?? {}),
-      parameters: parameters,
-      extra: dioOptions.extra,
-      logCurl: curlCommand,
-    ).log();
+    if (logModel.defaultLog) {
+      DioFlowLog(
+        logModel: logModel,
+        type: DioLogType.request,
+        url: DioFlowConfig.instance.baseUrl + endpointPath,
+        method: dioOptions.method,
+        data: data,
+        headers: Map<String, dynamic>.from(dioOptions.headers ?? {}),
+        parameters: parameters,
+        extra: dioOptions.extra,
+        logCurl: curlCommand,
+        isRefreshHandle: true,
+      ).log();
+    }
 
+    final requestStopwatch = Stopwatch()..start();
     try {
       Response response;
-      final method = (methodOverride).toUpperCase();
+      final method = methodOverride!.toUpperCase();
 
       switch (method) {
         case HttpMethods.get:
@@ -129,6 +138,9 @@ class DioRefreshTokenRequestHandle {
           logCurl: logCurl,
           fromCache: false,
           isRefreshHandle: true,
+          logModel: logModel,
+          duration: requestStopwatch.elapsed,
+          method: methodOverride,
         );
       } else {
         return FailedResponseModel.fromJson(
@@ -137,6 +149,9 @@ class DioRefreshTokenRequestHandle {
           logCurl: logCurl,
           fromCache: false,
           isRefreshHandle: true,
+          logModel: logModel,
+          duration: requestStopwatch.elapsed,
+          method: methodOverride,
         );
       }
     } on DioException catch (error) {
@@ -205,8 +220,11 @@ class DioRefreshTokenRequestHandle {
       return FailedResponseModel.fromJson(
         errorResponseData,
         endpointPath: endpointPath,
-        logCurl: '',
+        logCurl: curlCommand,
         isRefreshHandle: true,
+        logModel: logModel,
+        duration: requestStopwatch.elapsed,
+        method: methodOverride,
       );
     }
   }

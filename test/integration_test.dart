@@ -99,12 +99,6 @@ void main() {
       MockDioFlow.disableMockMode();
     });
 
-    test('Authentication Integration', () async {
-      // Skip this test as it requires SharedPreferences
-      // which is not available in unit tests without mocking
-      expect(true, true); // Placeholder test
-    });
-
     test('Response Model Extensions', () {
       final successResponse = SuccessResponseModel(
         data: {'message': 'Success'},

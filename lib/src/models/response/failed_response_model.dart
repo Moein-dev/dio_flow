@@ -25,6 +25,8 @@ class FailedResponseModel extends ResponseModel {
     bool isRefreshHandle = false,
     Map<String, dynamic>? headers,
     Map<String, dynamic>? extra,
+    Duration? duration,
+    String? method,
   }) {
     // Extract status code
     final statusCode =
@@ -42,15 +44,18 @@ class FailedResponseModel extends ResponseModel {
       DioFlowLog(
         logModel: logModel,
         url: DioFlowConfig.instance.baseUrl + endpointPath,
+        method: method,
         type: DioLogType.error,
         statusCode: statusCode,
         message: message,
         error: error,
+        data: json,
         headers: headers,
         logCurl: logCurl,
         isCache: fromCache,
         extra: extra,
         isRefreshHandle: isRefreshHandle,
+        duration: duration,
       ).log();
     }
 
@@ -79,9 +84,7 @@ class FailedResponseModel extends ResponseModel {
     } else if (json.containsKey("errors") &&
         json["errors"] is List &&
         (json["errors"] as List).isNotEmpty) {
-      return (json["errors"] as List)
-          .map((e) => e.toString())
-          .join(", ");
+      return (json["errors"] as List).map((e) => e.toString()).join(", ");
     } else if (json.containsKey("detail")) {
       return json["detail"].toString();
     } else if (json.containsKey("msg")) {
@@ -124,9 +127,7 @@ class FailedResponseModel extends ResponseModel {
       }
     }
 
-    if (message != null &&
-        message!.isNotEmpty &&
-        message!.length < 100) {
+    if (message != null && message!.isNotEmpty && message!.length < 100) {
       return message!;
     }
 

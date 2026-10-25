@@ -41,6 +41,8 @@ class TokenManager {
     final expiryTimestamp = _prefs!.getInt(_tokenExpiryKey);
     if (expiryTimestamp != null) {
       _tokenExpiry = DateTime.fromMillisecondsSinceEpoch(expiryTimestamp);
+    } else {
+      _tokenExpiry = null;
     }
   }
 
@@ -81,17 +83,20 @@ class TokenManager {
   }
 
   static bool _isTokenExpired() {
-    return _tokenExpiry?.isBefore(DateTime.now()) ?? false;
+    if (_tokenExpiry == null) return false;
+    return _tokenExpiry!.isBefore(DateTime.now());
   }
 
-  static Future<void> refreshAccessToken() async {
+  static Future<void> refreshAccessToken() {
     if (_refreshToken == null) {
-      throw ApiException('No refresh token available');
+      return Future.error(ApiException('No refresh token available'));
     }
 
     if (_refreshHandler == null) {
-      throw ApiException(
-        'No refresh handler configured. Set a RefreshHandler before refreshing.',
+      return Future.error(
+        ApiException(
+          'No refresh handler configured. Set a RefreshHandler before refreshing.',
+        ),
       );
     }
 
@@ -99,7 +104,13 @@ class TokenManager {
       return _refreshCompleter!.future;
     }
 
-    _refreshCompleter = Completer<void>();
+    final completer = Completer<void>();
+    _refreshCompleter = completer;
+    _performRefresh(completer);
+    return completer.future;
+  }
+
+  static Future<void> _performRefresh(Completer<void> completer) async {
     try {
       final RefreshTokenResponse res = await _refreshHandler!(_refreshToken!);
 
@@ -113,21 +124,22 @@ class TokenManager {
         expiry: res.expiry,
       );
 
-      _refreshCompleter!.complete();
-    } catch (e) {
-      if (!_refreshCompleter!.isCompleted) {
-        _refreshCompleter!.completeError(e);
+      completer.complete();
+    } catch (error, stackTrace) {
+      if (!completer.isCompleted) {
+        completer.completeError(error, stackTrace);
       }
-      rethrow;
     } finally {
-      _refreshCompleter = null;
+      if (identical(_refreshCompleter, completer)) {
+        _refreshCompleter = null;
+      }
     }
   }
 
   static Future<void> setTokens({
     required String accessToken,
     required String refreshToken,
-    required DateTime expiry,
+    DateTime? expiry,
   }) async {
     if (_prefs == null) {
       throw ApiException(
@@ -135,11 +147,18 @@ class TokenManager {
       );
     }
 
-    await Future.wait([
+    final futures = <Future<bool>>[
       _prefs!.setString(_accessTokenKey, accessToken),
       _prefs!.setString(_refreshTokenKey, refreshToken),
-      _prefs!.setInt(_tokenExpiryKey, expiry.millisecondsSinceEpoch),
-    ]);
+    ];
+
+    if (expiry != null) {
+      futures.add(_prefs!.setInt(_tokenExpiryKey, expiry.millisecondsSinceEpoch));
+    } else {
+      futures.add(_prefs!.remove(_tokenExpiryKey));
+    }
+
+    await Future.wait(futures);
 
     _accessToken = accessToken;
     _refreshToken = refreshToken;

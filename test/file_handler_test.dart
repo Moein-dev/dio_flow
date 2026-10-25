@@ -1,186 +1,127 @@
-// import 'package:flutter_test/flutter_test.dart';
-// import 'package:dio_flow/dio_flow.dart';
+import 'dart:typed_data';
 
-// void main() {
-//   group('FileHandler', () {
-//     test('should have required static methods', () {
-//       expect(FileHandler.uploadFile, isA<Function>());
-//       expect(FileHandler.uploadMultipleFiles, isA<Function>());
-//       expect(FileHandler.uploadBytes, isA<Function>());
-//       expect(FileHandler.downloadBytes, isA<Function>());
-//       expect(FileHandler.getFileInfo, isA<Function>());
-//     });
-//   });
+import 'package:dio/dio.dart' show ResponseType;
+import 'package:dio_flow/dio_flow.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-//   group('ProgressCallback', () {
-//     test('should be a valid function type', () {
-//       void testCallback(int sent, int total) {
-//         // Test callback implementation
-//         expect(sent, isA<int>());
-//         expect(total, isA<int>());
-//       }
+import 'support/scripted_adapter.dart';
 
-//       // Test that the callback can be assigned
-//       ProgressCallback callback = testCallback;
-//       expect(callback, isA<ProgressCallback>());
+void main() {
+  setUp(() {
+    DioFlowConfig.initialize(baseUrl: 'https://api.example.com');
+    MockDioFlow.enableMockMode();
+    MockDioFlow.clearAllMocks();
+  });
 
-//       // Test calling the callback
-//       callback(50, 100);
-//     });
+  tearDown(() {
+    MockDioFlow.disableMockMode();
+    ApiClient.reset();
+  });
 
-//     test('should handle progress calculations', () {
-//       final List<double> progressValues = [];
+  test('uploads bytes through the existing mock request flow', () async {
+    MockDioFlow.mockResponse(
+      '/upload',
+      MockResponse.success({'uploaded': true}),
+      method: 'POST',
+    );
 
-//       void progressCallback(int sent, int total) {
-//         final progress = (sent / total) * 100;
-//         progressValues.add(progress);
-//       }
+    final response = await FileHandler.uploadFile<Uint8List>('/upload', {
+      'file': Uint8List.fromList([1, 2, 3]),
+    }, UploadMethodsEnum.post);
 
-//       // Simulate progress updates
-//       progressCallback(0, 100); // 0%
-//       progressCallback(25, 100); // 25%
-//       progressCallback(50, 100); // 50%
-//       progressCallback(75, 100); // 75%
-//       progressCallback(100, 100); // 100%
+    expect(response.isSuccess, isTrue);
+    expect(response.data, {'uploaded': true});
+  });
 
-//       expect(progressValues, equals([0.0, 25.0, 50.0, 75.0, 100.0]));
-//     });
-//   });
+  test(
+    'rejects unsupported file values without dispatching a request',
+    () async {
+      final response = await FileHandler.uploadFile<Object>('/upload', {
+        'file': Object(),
+      }, UploadMethodsEnum.post);
 
-//   group('File Upload Scenarios', () {
-//     test('should handle single file upload parameters', () {
-//       // Test that we can create the expected parameters for file upload
-//       const fieldName = 'avatar';
-//       final additionalData = {
-//         'userId': '123',
-//         'description': 'Profile picture',
-//       };
+      expect(response.isFailure, isTrue);
+      expect(response.message, 'Format Not Supported');
+    },
+  );
 
-//       expect(fieldName, equals('avatar'));
-//       expect(additionalData['userId'], equals('123'));
-//       expect(additionalData['description'], equals('Profile picture'));
-//     });
+  test('calculates file progress safely', () {
+    expect(FileProgress(50, 100).percentage, 50);
+    expect(FileProgress(1, 0).percentage, 0);
+  });
 
-//     test('should handle multiple file upload parameters', () {
-//       final files = {
-//         'avatar': 'path/to/avatar.jpg',
-//         'cover': 'path/to/cover.jpg',
-//         'document': 'path/to/document.pdf',
-//       };
+  test('forwards upload progress without consuming multipart data', () async {
+    MockDioFlow.disableMockMode();
+    SharedPreferences.setMockInitialValues({});
+    await ApiClient.initialize();
+    final adapter = ScriptedAdapter([
+      jsonStep({'uploaded': true}),
+    ]);
+    ApiClient.dio.httpClientAdapter = adapter;
+    final progress = <FileProgress>[];
 
-//       expect(files.length, equals(3));
-//       expect(files['avatar'], equals('path/to/avatar.jpg'));
-//       expect(files['cover'], equals('path/to/cover.jpg'));
-//       expect(files['document'], equals('path/to/document.pdf'));
-//     });
-//   });
+    final response = await FileHandler.uploadFile<Uint8List>(
+      '/folders/{id}/upload',
+      {
+        'front': Uint8List.fromList([1, 2, 3]),
+        'back': Uint8List.fromList([4, 5]),
+      },
+      UploadMethodsEnum.post,
+      pathParameters: {'id': 'a/b'},
+      additionalData: {'title': 'identity'},
+      requestOptions: const RequestOptionsModel(
+        customHeaders: {'X-Upload': 'profile'},
+      ),
+      onProgress: (sent, total) => progress.add(FileProgress(sent, total)),
+    );
 
-//   group('File Download Scenarios', () {
-//     test('should handle download parameters', () {
-//       const savePath = '/downloads/file.pdf';
-//       final parameters = {'version': 'latest', 'format': 'pdf'};
+    expect(response.isSuccess, isTrue);
+    expect(progress, isNotEmpty);
+    expect(progress.last.sent, progress.last.total);
+    expect(adapter.requestBodies.single, isNotEmpty);
+    expect(adapter.requests.single.path, '/folders/a%2Fb/upload');
+    expect(adapter.requests.single.headers['X-Upload'], 'profile');
+  });
 
-//       expect(savePath, equals('/downloads/file.pdf'));
-//       expect(parameters['version'], equals('latest'));
-//       expect(parameters['format'], equals('pdf'));
-//     });
+  test('downloads bytes and invokes onBytes only after success', () async {
+    MockDioFlow.disableMockMode();
+    SharedPreferences.setMockInitialValues({});
+    await ApiClient.initialize();
+    ApiClient.dio.httpClientAdapter = ScriptedAdapter([
+      bytesStep([7, 8, 9]),
+    ]);
+    Uint8List? handled;
 
-//     test('should handle file info parameters', () {
-//       final parameters = {'includeMetadata': true, 'checksum': 'md5'};
+    final response = await FileHandler.downloadAndHandle(
+      '/download',
+      UploadMethodsEnum.post,
+      onBytes: (bytes) async => handled = bytes,
+    );
 
-//       expect(parameters['includeMetadata'], isTrue);
-//       expect(parameters['checksum'], equals('md5'));
-//     });
-//   });
+    expect(response.isSuccess, isTrue);
+    expect(response.data, Uint8List.fromList([7, 8, 9]));
+    expect(handled, Uint8List.fromList([7, 8, 9]));
+  });
 
-//   group('RequestOptionsModel Extensions', () {
-//     test('should create from Dio Options', () {
-//       // This tests the fromDioOptions factory constructor
-//       final originalOptions = RequestOptionsModel(
-//         hasBearerToken: true,
-//         customHeaders: {'Custom-Header': 'value'},
-//       );
+  test('download failures use the standard failed response model', () async {
+    MockDioFlow.disableMockMode();
+    SharedPreferences.setMockInitialValues({});
+    await ApiClient.initialize();
+    ApiClient.dio.httpClientAdapter = ScriptedAdapter([
+      jsonStep({'message': 'unavailable'}, statusCode: 503),
+    ]);
 
-//       final dioOptions = originalOptions.toDioOptions();
-//       final recreatedOptions = RequestOptionsModel.fromDioOptions(dioOptions);
+    final response = await FileHandler.downloadBytes(
+      '/download',
+      UploadMethodsEnum.post,
+      requestOptions: const RequestOptionsModel(
+        responseType: ResponseType.bytes,
+        retryOptions: RetryOptions(maxAttempts: 1),
+      ),
+    );
 
-//       expect(
-//         recreatedOptions.customHeaders,
-//         equals({'Custom-Header': 'value'}),
-//       );
-//       // expect(recreatedOptions.requiresAuth, isTrue);
-//       expect(recreatedOptions.retryOptions?.maxAttempts, equals(3));
-//     });
-
-//     test('should handle copyWith for file operations', () {
-//       const baseOptions = RequestOptionsModel();
-
-//       final fileUploadOptions = baseOptions.copyWith(
-//         hasBearerToken: true,
-//         headers: {'Content-Type': 'multipart/form-data'},
-//       );
-
-//       expect(fileUploadOptions.hasBearerToken, isTrue);
-//       expect(
-//         fileUploadOptions.customHeaders!['Content-Type'],
-//         equals('multipart/form-data'),
-//       );
-//       // expect(fileUploadOptions.shouldCache, equals(baseOptions.shouldCache));
-//     });
-//   });
-
-//   group('File Type Validation', () {
-//     test('should validate common file extensions', () {
-//       final validImageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
-//       final validDocumentExtensions = ['.pdf', '.doc', '.docx', '.txt'];
-//       final validVideoExtensions = ['.mp4', '.avi', '.mov', '.mkv'];
-
-//       // Test image extensions
-//       for (final ext in validImageExtensions) {
-//         expect(ext.startsWith('.'), isTrue);
-//         expect(ext.length, greaterThan(1));
-//       }
-
-//       // Test document extensions
-//       for (final ext in validDocumentExtensions) {
-//         expect(ext.startsWith('.'), isTrue);
-//         expect(ext.length, greaterThan(1));
-//       }
-
-//       // Test video extensions
-//       for (final ext in validVideoExtensions) {
-//         expect(ext.startsWith('.'), isTrue);
-//         expect(ext.length, greaterThan(1));
-//       }
-//     });
-
-//     test('should handle file size calculations', () {
-//       const bytesInKB = 1024;
-//       const bytesInMB = bytesInKB * 1024;
-//       const bytesInGB = bytesInMB * 1024;
-
-//       expect(bytesInKB, equals(1024));
-//       expect(bytesInMB, equals(1048576));
-//       expect(bytesInGB, equals(1073741824));
-
-//       // Test file size formatting
-//       String formatFileSize(int bytes) {
-//         if (bytes < bytesInKB) {
-//           return '$bytes B';
-//         }
-//         if (bytes < bytesInMB) {
-//           return '${(bytes / bytesInKB).toStringAsFixed(1)} KB';
-//         }
-//         if (bytes < bytesInGB) {
-//           return '${(bytes / bytesInMB).toStringAsFixed(1)} MB';
-//         }
-//         return '${(bytes / bytesInGB).toStringAsFixed(1)} GB';
-//       }
-
-//       expect(formatFileSize(512), equals('512 B'));
-//       expect(formatFileSize(1536), equals('1.5 KB'));
-//       expect(formatFileSize(2097152), equals('2.0 MB'));
-//       expect(formatFileSize(1073741824), equals('1.0 GB'));
-//     });
-//   });
-// }
+    expect(response, isA<FailedResponseModel>());
+    expect(response.statusCode, 503);
+  });
+}
