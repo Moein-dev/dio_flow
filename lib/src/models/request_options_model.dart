@@ -47,12 +47,10 @@ class RequestOptionsModel {
   /// Creates a new request options model with the specified configuration.
   ///
   /// Most parameters are optional and have sensible defaults:
-  /// - [hasBearerToken] defaults to true
-  /// - [shouldCache] defaults to false
-  /// - [cacheDuration] defaults to 5 minutes
-  /// - [requiresAuth] defaults to true
-  /// - [retryCount] defaults to 3
-  /// - [retryInterval] defaults to 1 second
+  /// - [hasBearerToken] defaults to false
+  /// - [cacheOptions] defaults to [CacheOptions.defaultOptions]
+  /// - [retryOptions] defaults to [RetryOptions.defaultOptions]
+  /// - [logModel] defaults to [LogModel.defaultLogModel]
   const RequestOptionsModel({
     this.hasBearerToken = false,
     this.cacheOptions = CacheOptions.defaultOptions,

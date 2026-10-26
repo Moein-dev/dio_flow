@@ -153,7 +153,9 @@ class TokenManager {
     ];
 
     if (expiry != null) {
-      futures.add(_prefs!.setInt(_tokenExpiryKey, expiry.millisecondsSinceEpoch));
+      futures.add(
+        _prefs!.setInt(_tokenExpiryKey, expiry.millisecondsSinceEpoch),
+      );
     } else {
       futures.add(_prefs!.remove(_tokenExpiryKey));
     }

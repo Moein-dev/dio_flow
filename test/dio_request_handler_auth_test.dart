@@ -288,9 +288,7 @@ void main() {
       expect(hasToken, isTrue);
 
       TokenManager.setRefreshHandler((refreshToken) async {
-        return RefreshTokenResponse(
-          accessToken: 'refreshed_no_expiry',
-        );
+        return RefreshTokenResponse(accessToken: 'refreshed_no_expiry');
       });
 
       await TokenManager.refreshAccessToken();

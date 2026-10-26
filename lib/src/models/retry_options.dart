@@ -20,7 +20,7 @@ class RetryOptions {
   /// Parameters:
   /// - [maxAttempts]: Maximum number of retry attempts (default: 3)
   /// - [retryInterval]: Delay between retries (default: 1 second)
-  /// - [retryStatusCodes]: HTTP status codes that should trigger a retry (default: [408, 500, 502, 503, 504])
+  /// - [retryStatusCodes]: HTTP status codes that should trigger a retry (default: `[408, 500, 502, 503, 504]`)
   /// - [retryOnConnectionTimeout]: Whether to retry on connection timeout (default: true)
   /// - [retryOnReceiveTimeout]: Whether to retry on receive timeout (default: true)
   const RetryOptions({

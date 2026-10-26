@@ -130,7 +130,9 @@ class _DemoHomePageState extends State<DemoHomePage> {
 
         final rawData = response.data;
         if (rawData is Map || rawData is List) {
-          _lastResponseJson = const JsonEncoder.withIndent('  ').convert(rawData);
+          _lastResponseJson = const JsonEncoder.withIndent(
+            '  ',
+          ).convert(rawData);
         } else if (rawData != null) {
           _lastResponseJson = rawData.toString();
         } else {
@@ -187,7 +189,9 @@ class _DemoHomePageState extends State<DemoHomePage> {
 
   void _onSimulateUpload() {
     _executeRequest('Upload File', () async {
-      final sampleBytes = Uint8List.fromList(List.generate(2048, (i) => i % 256));
+      final sampleBytes = Uint8List.fromList(
+        List.generate(2048, (i) => i % 256),
+      );
       return FileHandler.uploadFile(
         '/upload',
         {'document': sampleBytes},
@@ -370,22 +374,25 @@ class _DemoHomePageState extends State<DemoHomePage> {
                                 ? Icons.check_circle
                                 : Icons.cancel,
                             size: 16,
-                            color: _lastStatusCode! < 400
-                                ? Colors.green
-                                : Colors.red,
+                            color:
+                                _lastStatusCode! < 400
+                                    ? Colors.green
+                                    : Colors.red,
                           ),
                           label: Text(
                             'Status $_lastStatusCode',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: _lastStatusCode! < 400
-                                  ? Colors.green.shade800
-                                  : Colors.red.shade800,
+                              color:
+                                  _lastStatusCode! < 400
+                                      ? Colors.green.shade800
+                                      : Colors.red.shade800,
                             ),
                           ),
-                          backgroundColor: _lastStatusCode! < 400
-                              ? Colors.green.shade50
-                              : Colors.red.shade50,
+                          backgroundColor:
+                              _lastStatusCode! < 400
+                                  ? Colors.green.shade50
+                                  : Colors.red.shade50,
                           padding: EdgeInsets.zero,
                         ),
                     ],
@@ -395,7 +402,11 @@ class _DemoHomePageState extends State<DemoHomePage> {
                       padding: const EdgeInsets.only(top: 4, bottom: 8),
                       child: Row(
                         children: [
-                          Icon(Icons.timer_outlined, size: 16, color: theme.hintColor),
+                          Icon(
+                            Icons.timer_outlined,
+                            size: 16,
+                            color: theme.hintColor,
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             'Duration: ${_lastDuration!.inMilliseconds} ms',
@@ -403,7 +414,11 @@ class _DemoHomePageState extends State<DemoHomePage> {
                           ),
                           if (_lastFromCache) ...[
                             const SizedBox(width: 12),
-                            const Icon(Icons.flash_on, size: 16, color: Colors.amber),
+                            const Icon(
+                              Icons.flash_on,
+                              size: 16,
+                              color: Colors.amber,
+                            ),
                             Text(
                               'Served from Cache',
                               style: theme.textTheme.bodySmall?.copyWith(
@@ -422,9 +437,7 @@ class _DemoHomePageState extends State<DemoHomePage> {
                     decoration: BoxDecoration(
                       color: theme.colorScheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: theme.dividerColor,
-                      ),
+                      border: Border.all(color: theme.dividerColor),
                     ),
                     child: SelectableText(
                       _lastResponseJson,
@@ -444,7 +457,9 @@ class _DemoHomePageState extends State<DemoHomePage> {
                             Clipboard.setData(ClipboardData(text: _lastCurl!));
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text('cURL command copied to clipboard!'),
+                                content: Text(
+                                  'cURL command copied to clipboard!',
+                                ),
                                 duration: Duration(seconds: 2),
                               ),
                             );
@@ -454,10 +469,14 @@ class _DemoHomePageState extends State<DemoHomePage> {
                         ),
                       TextButton.icon(
                         onPressed: () {
-                          Clipboard.setData(ClipboardData(text: _lastResponseJson));
+                          Clipboard.setData(
+                            ClipboardData(text: _lastResponseJson),
+                          );
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('Response JSON copied to clipboard!'),
+                              content: Text(
+                                'Response JSON copied to clipboard!',
+                              ),
                               duration: Duration(seconds: 2),
                             ),
                           );

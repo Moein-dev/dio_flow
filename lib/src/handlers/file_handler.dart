@@ -167,7 +167,7 @@ class FileHandler {
     CancelToken? cancelToken,
   }) async {
     try {
-      return DioRequestHandler.get(
+      return await DioRequestHandler.get(
         endpoint,
         pathParameters: pathParameters,
         parameters: parameters,
@@ -216,7 +216,7 @@ class FileHandler {
     CancelToken? cancelToken,
   }) async {
     try {
-      return _sendRequestWithMethod(
+      return await _sendRequestWithMethod(
         methodTypes,
         endpoint,
         parameters: parameters,
@@ -262,7 +262,7 @@ class FileHandler {
     CancelToken? cancelToken,
   }) async {
     try {
-      return _sendRequestWithMethod(
+      return await _sendRequestWithMethod(
         methodTypes,
         endpoint,
         parameters: parameters,
