@@ -183,4 +183,35 @@ void main() {
       expect(failed.logCurl, equals('curl failed.com'));
     });
   });
+
+  group('Rate Limiting Configuration', () {
+    tearDown(() {
+      DioFlowConfig.reset();
+    });
+
+    test('default configuration disables client-side rate limiting', () {
+      DioFlowConfig.initialize(baseUrl: 'https://api.example.com');
+      expect(DioFlowConfig.instance.enableRateLimit, isFalse);
+      expect(DioFlowConfig.instance.rateLimitMaxRequests, equals(60));
+      expect(
+        DioFlowConfig.instance.rateLimitInterval,
+        equals(const Duration(minutes: 1)),
+      );
+    });
+
+    test('custom rate limit configuration is preserved', () {
+      DioFlowConfig.initialize(
+        baseUrl: 'https://api.example.com',
+        enableRateLimit: true,
+        rateLimitMaxRequests: 120,
+        rateLimitInterval: const Duration(seconds: 30),
+      );
+      expect(DioFlowConfig.instance.enableRateLimit, isTrue);
+      expect(DioFlowConfig.instance.rateLimitMaxRequests, equals(120));
+      expect(
+        DioFlowConfig.instance.rateLimitInterval,
+        equals(const Duration(seconds: 30)),
+      );
+    });
+  });
 }

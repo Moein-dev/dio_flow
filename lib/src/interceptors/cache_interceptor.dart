@@ -20,8 +20,9 @@ class CacheInterceptor extends Interceptor {
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
-    final bool shouldCache = options.extra['shouldCache'];
-    final Duration cacheDuration = options.extra['cacheDuration'];
+    final bool shouldCache = options.extra['shouldCache'] == true;
+    final Duration cacheDuration =
+        options.extra['cacheDuration'] as Duration? ?? Duration.zero;
 
     if (!shouldCache) {
       return handler.next(options);
@@ -30,31 +31,38 @@ class CacheInterceptor extends Interceptor {
       final cachedData = prefs.getString(cacheKey);
 
       if (cachedData != null) {
-        final cacheEntry = json.decode(cachedData);
-        final timestamp = DateTime.fromMillisecondsSinceEpoch(
-          cacheEntry['timestamp'],
-        );
+        try {
+          final cacheEntry = json.decode(cachedData);
+          final timestamp = DateTime.fromMillisecondsSinceEpoch(
+            cacheEntry['timestamp'],
+          );
 
-        if (DateTime.now().difference(timestamp) < cacheDuration) {
-          final response = Response(
-            requestOptions: options,
-            data: cacheEntry['data'],
-            statusCode: 200,
-            statusMessage: 'OK (from cache)',
-            headers: Headers.fromMap(
-              Map<String, List<String>>.from(
-                (cacheEntry['headers'] as Map<String, dynamic>).map(
-                  (key, value) => MapEntry(
-                    key,
-                    (value as List<dynamic>).map((e) => e.toString()).toList(),
+          if (DateTime.now().difference(timestamp) < cacheDuration) {
+            final response = Response(
+              requestOptions: options,
+              data: cacheEntry['data'],
+              statusCode: 200,
+              statusMessage: 'OK (from cache)',
+              headers: Headers.fromMap(
+                Map<String, List<String>>.from(
+                  (cacheEntry['headers'] as Map<String, dynamic>).map(
+                    (key, value) => MapEntry(
+                      key,
+                      (value as List<dynamic>)
+                          .map((e) => e.toString())
+                          .toList(),
+                    ),
                   ),
                 ),
               ),
-            ),
-            extra: {...options.extra, 'fromCache': true},
-          );
+              extra: {...options.extra, 'fromCache': true},
+            );
 
-          return handler.resolve(response);
+            return handler.resolve(response);
+          }
+        } catch (_) {
+          await prefs.remove(cacheKey);
+          return handler.next(options);
         }
         await prefs.remove(cacheKey);
       }
@@ -64,7 +72,8 @@ class CacheInterceptor extends Interceptor {
 
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) async {
-    final bool shouldCache = response.requestOptions.extra['shouldCache'];
+    final bool shouldCache =
+        response.requestOptions.extra['shouldCache'] == true;
 
     if (shouldCache && response.statusCode == 200) {
       final cacheKey = _generateCacheKey(response.requestOptions);
@@ -73,7 +82,11 @@ class CacheInterceptor extends Interceptor {
         'data': response.data,
         'headers': response.headers.map,
       };
-      await prefs.setString(cacheKey, json.encode(cacheEntry));
+      try {
+        await prefs.setString(cacheKey, json.encode(cacheEntry));
+      } catch (_) {
+        await prefs.remove(cacheKey);
+      }
     }
 
     handler.next(response);
@@ -81,26 +94,32 @@ class CacheInterceptor extends Interceptor {
 
   /// Generates a unique cache key for a request based on its method, path, and query parameters.
   String _generateCacheKey(RequestOptions options) {
-    final buffer =
-        StringBuffer()
-          ..write(_cachePrefix)
-          ..write(options.method)
-          ..write(options.path);
-
-    if (options.queryParameters.isNotEmpty) {
-      buffer.write('?');
-      final stringParams = options.queryParameters.map(
-        (key, value) => MapEntry(key, value?.toString() ?? ''),
-      );
-      buffer.write(Uri(queryParameters: stringParams).query);
-    }
-
-    return buffer.toString();
+    final entries =
+        options.queryParameters.entries.toList()
+          ..sort((a, b) => a.key.compareTo(b.key));
+    final queryParameters = <String, dynamic>{
+      for (final entry in entries)
+        entry.key:
+            entry.value is Iterable
+                ? (entry.value as Iterable)
+                    .map((item) => item.toString())
+                    .toList()
+                : entry.value?.toString() ?? '',
+    };
+    final uri = options.uri.replace(
+      queryParameters: queryParameters.isEmpty ? null : queryParameters,
+    );
+    return '$_cachePrefix${options.method}:$uri';
   }
 
   /// Clears all cached responses stored by this interceptor.
   Future<void> clearCache() async {
-    final keys = prefs.getKeys().where((key) => key.startsWith(_cachePrefix));
+    await clear(prefs);
+  }
+
+  static Future<void> clear(SharedPreferences prefs) async {
+    final keys =
+        prefs.getKeys().where((key) => key.startsWith(_cachePrefix)).toList();
     for (final key in keys) {
       await prefs.remove(key);
     }

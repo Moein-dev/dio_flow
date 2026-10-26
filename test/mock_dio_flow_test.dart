@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dio_flow/dio_flow.dart';
 
@@ -173,4 +175,68 @@ void main() {
       expect(responseModel.logCurl, equals('MOCK REQUEST'));
     });
   });
+
+  test(
+    'request flow resolves path parameters before matching a mock',
+    () async {
+      DioFlowConfig.initialize(baseUrl: 'https://api.example.com');
+      MockDioFlow.enableMockMode();
+      MockDioFlow.mockResponse(
+        '/users/a%2Fb',
+        MockResponse.success({'matched': true}),
+      );
+
+      final response = await DioRequestHandler.get(
+        '/users/{id}',
+        pathParameters: {'id': 'a/b'},
+      );
+
+      expect(response.isSuccess, isTrue);
+      expect(response.data, {'matched': true});
+    },
+  );
+
+  test('mock payloads preserve Map, List, String, null, and bytes', () {
+    final payloads = <dynamic>[
+      {'value': 1},
+      [1, 2],
+      'plain',
+      null,
+      Uint8List.fromList([1, 2, 3]),
+    ];
+
+    for (final payload in payloads) {
+      final response = MockDioFlow.convertToResponseModel(
+        MockResponse.success(payload),
+      );
+      expect(response.data, payload);
+      expect(response.statusCode, 200);
+    }
+  });
+
+  test(
+    'mock flow bypasses network, cache, token, and retry processing',
+    () async {
+      DioFlowConfig.initialize(baseUrl: 'https://api.example.com');
+      MockDioFlow.enableMockMode();
+      MockDioFlow.mockResponse(
+        '/offline',
+        MockResponse.success({'source': 'mock'}),
+        method: 'PATCH',
+      );
+
+      final response = await DioRequestHandler.patch(
+        '/offline',
+        data: {'password': 'secret'},
+        requestOptions: const RequestOptionsModel(
+          hasBearerToken: true,
+          cacheOptions: CacheOptions(shouldCache: true),
+          retryOptions: RetryOptions(maxAttempts: 5),
+        ),
+      );
+
+      expect(response.isSuccess, isTrue);
+      expect(response.data, {'source': 'mock'});
+    },
+  );
 }

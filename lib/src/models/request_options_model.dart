@@ -125,6 +125,10 @@ class RequestOptionsModel {
         ...customExtra ?? {},
         'maxAttempts': effectiveRetryOptions.maxAttempts,
         'retryInterval': effectiveRetryOptions.retryInterval,
+        'retryStatusCodes': effectiveRetryOptions.retryStatusCodes,
+        'retryOnConnectionTimeout':
+            effectiveRetryOptions.retryOnConnectionTimeout,
+        'retryOnReceiveTimeout': effectiveRetryOptions.retryOnReceiveTimeout,
         'shouldCache': effectiveCacheOptions.shouldCache,
         'cacheDuration': effectiveCacheOptions.cacheDuration,
       },
@@ -140,9 +144,11 @@ class RequestOptionsModel {
     final extra = options.extra ?? <String, dynamic>{};
 
     final int retryCountFromExtra =
-        extra['retryCount'] is int
-            ? extra['retryCount'] as int
-            : RetryOptions.defaultOptions.maxAttempts;
+        extra['maxAttempts'] is int
+            ? extra['maxAttempts'] as int
+            : (extra['retryCount'] is int
+                ? extra['retryCount'] as int
+                : RetryOptions.defaultOptions.maxAttempts);
     final dynamic rawInterval = extra['retryInterval'];
     final Duration retryIntervalFromExtra =
         rawInterval is int
@@ -161,11 +167,18 @@ class RequestOptionsModel {
       retryOptions: RetryOptions(
         maxAttempts: retryCountFromExtra,
         retryInterval: retryIntervalFromExtra,
-        retryStatusCodes: RetryOptions.defaultOptions.retryStatusCodes,
+        retryStatusCodes:
+            extra['retryStatusCodes'] is List
+                ? List<int>.from(extra['retryStatusCodes'] as List)
+                : RetryOptions.defaultOptions.retryStatusCodes,
         retryOnConnectionTimeout:
-            RetryOptions.defaultOptions.retryOnConnectionTimeout,
+            extra['retryOnConnectionTimeout'] is bool
+                ? extra['retryOnConnectionTimeout'] as bool
+                : RetryOptions.defaultOptions.retryOnConnectionTimeout,
         retryOnReceiveTimeout:
-            RetryOptions.defaultOptions.retryOnReceiveTimeout,
+            extra['retryOnReceiveTimeout'] is bool
+                ? extra['retryOnReceiveTimeout'] as bool
+                : RetryOptions.defaultOptions.retryOnReceiveTimeout,
       ),
     );
   }

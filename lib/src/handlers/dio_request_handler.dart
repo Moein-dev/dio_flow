@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
-import 'package:dio_flow/dio_flow.dart';
+import 'package:dio_flow/dio_flow.dart' hide ProgressCallback;
 import 'package:dio_flow/src/handlers/dio_flow_log.dart';
 import 'package:dio_flow/src/handlers/dio_hndler_helper.dart';
 
@@ -16,11 +16,21 @@ class DioRequestHandler {
     String? methodOverride,
     CancelToken? cancelToken,
   }) async {
+    final logModel = requestOptions.logModel ?? LogModel.disabledAllLog;
+    final endpointTemplate = DioHndlerHelper.endpointPath(endpoint);
+    final endpointPath = DioHndlerHelper.resolvePath(
+      endpointTemplate,
+      pathParameters,
+    );
+
     // Handle Mock Data Process
     if (MockDioFlow.isMockEnabled) {
       return DioHndlerHelper.handleMockRequest(
-        endpoint,
+        endpointPath,
         methodOverride ?? HttpMethods.get,
+        parameters: parameters,
+        data: data,
+        requestOptions: requestOptions,
       );
     }
 
@@ -33,18 +43,13 @@ class DioRequestHandler {
       isdataFile: data is FormData ? true : false,
     );
 
-    // Provideded Uri template (may contain placeholders)
-    final endpointTemplate = DioHndlerHelper.endpointPath(endpoint);
-
-    // Resolve pathParameters into template -> endpointPath
-    final endpointPath = DioHndlerHelper.resolvePath(
-      endpointTemplate,
-      pathParameters,
-    );
-
     // Provided Options With Extra
     final dioOptions = requestOptions.toDioOptions(method: methodOverride);
     dioOptions.headers = {...dioOptions.headers ?? {}, ...headers};
+    final progressValue =
+        requestOptions.customExtra?[DioHndlerHelper.uploadProgressExtraKey];
+    final ProgressCallback? onSendProgress =
+        progressValue is ProgressCallback ? progressValue : null;
 
     // prepare extra
     final Map<String, dynamic> baseExtra = {
@@ -52,22 +57,27 @@ class DioRequestHandler {
       'isRetry': dioOptions.extra?['isRetry'] ?? false,
       'retryCount': dioOptions.extra?['retryCount'] ?? 0,
       'isTokenRefreshed': false,
-    };
+    }..remove(DioHndlerHelper.uploadProgressExtraKey);
 
     var newOptions = dioOptions.copyWith(extra: baseExtra);
 
-    /// Create initial log curl
-    final firstCurl = DioHndlerHelper.curlCommand(
-      methodOverride: methodOverride!,
-      baseUrl: DioFlowConfig.instance.baseUrl + endpointPath,
-      endpointPath: endpointPath,
-      data: data,
-      parameters: parameters,
-      headers: headers,
-    );
+    String curlForLog() =>
+        logModel.defaultLog
+            ? DioHndlerHelper.curlCommand(
+              methodOverride: methodOverride!,
+              baseUrl: DioFlowConfig.instance.baseUrl,
+              endpointPath: endpointPath,
+              data: data,
+              parameters: parameters,
+              headers: headers,
+              includeSensitiveData: logModel.includeSensitiveDataInCopyLogs,
+            )
+            : '';
 
     final int maxAttempts = requestOptions.retryOptions.maxAttempts;
     final Duration interval = requestOptions.retryOptions.retryInterval;
+    var dispatchCount = 0;
+    var tokenRefreshAttempted = false;
 
     /// start loop
     for (int attempt = 0; attempt < maxAttempts; attempt++) {
@@ -80,24 +90,20 @@ class DioRequestHandler {
         'retryCount': firstAttempts ? 0 : attempt,
       };
       var optionsThisAttempt = newOptions.copyWith(extra: thisOptionExtra);
+      final dataThisAttempt =
+          data is FormData && dispatchCount > 0 ? data.clone() : data;
+      dispatchCount++;
 
       /// Create log curl and Console Log for Request
-      final curlCommand = DioHndlerHelper.curlCommand(
-        methodOverride: methodOverride,
-        baseUrl: DioFlowConfig.instance.baseUrl,
-        endpointPath: endpointPath,
-        data: data,
-        parameters: parameters,
-        headers: headers,
-      );
+      final curlCommand = curlForLog();
       final bool cacheLoad = requestOptions.cacheOptions.shouldCache;
-      if (firstAttempts && requestOptions.logModel!.defaultLog) {
+      if (firstAttempts && logModel.defaultLog) {
         DioFlowLog(
-          logModel: requestOptions.logModel!,
+          logModel: logModel,
           type: DioLogType.request,
           url: DioFlowConfig.instance.baseUrl + endpointPath,
           method: newOptions.method,
-          data: data,
+          data: dataThisAttempt,
           headers: Map<String, dynamic>.from(newOptions.headers ?? {}),
           parameters: parameters,
           extra: optionsThisAttempt.extra,
@@ -107,9 +113,10 @@ class DioRequestHandler {
       }
 
       /// Start the application process from DIO
+      final requestStopwatch = Stopwatch()..start();
       try {
         Response response;
-        final method = (methodOverride).toUpperCase();
+        final method = methodOverride!.toUpperCase();
 
         switch (method) {
           case HttpMethods.get:
@@ -124,27 +131,30 @@ class DioRequestHandler {
             response = await ApiClient.dio.post(
               endpointPath,
               queryParameters: parameters,
-              data: data,
+              data: dataThisAttempt,
               options: optionsThisAttempt,
               cancelToken: internalCancelToken,
+              onSendProgress: onSendProgress,
             );
             break;
           case HttpMethods.put:
             response = await ApiClient.dio.put(
               endpointPath,
               queryParameters: parameters,
-              data: data,
+              data: dataThisAttempt,
               options: optionsThisAttempt,
               cancelToken: internalCancelToken,
+              onSendProgress: onSendProgress,
             );
             break;
           case HttpMethods.patch:
             response = await ApiClient.dio.patch(
               endpointPath,
               queryParameters: parameters,
-              data: data,
+              data: dataThisAttempt,
               options: optionsThisAttempt,
               cancelToken: internalCancelToken,
+              onSendProgress: onSendProgress,
             );
             break;
           case HttpMethods.delete:
@@ -181,7 +191,7 @@ class DioRequestHandler {
           responseData = {'data': response.data, 'status': response.statusCode};
         }
 
-        responseData['extra'] = optionsThisAttempt.extra ?? {};
+        // responseData['extra'] = optionsThisAttempt.extra ?? {};
 
         if (!responseData.containsKey('status') &&
             !responseData.containsKey('statusCode')) {
@@ -189,8 +199,8 @@ class DioRequestHandler {
         }
 
         // headers
+        final relevantHeaders = <String, dynamic>{};
         if (response.headers.map.isNotEmpty) {
-          final relevantHeaders = <String, dynamic>{};
           for (final h in [
             'content-type',
             'authorization',
@@ -202,28 +212,22 @@ class DioRequestHandler {
               relevantHeaders[h] = response.headers.value(h);
             }
           }
-          if (relevantHeaders.isNotEmpty) {
-            responseData['headers'] = relevantHeaders;
-          }
+          // if (relevantHeaders.isNotEmpty) {
+          //   responseData['headers'] = relevantHeaders;
+          // }
         }
 
         final statusCode = response.statusCode ?? 500;
         final fromCache = response.extra['fromCache'] ?? false;
 
         /// Create log curl and Console Log for Response
-        final responseCurlCommand = DioHndlerHelper.curlCommand(
-          methodOverride: methodOverride,
-          baseUrl: DioFlowConfig.instance.baseUrl,
-          endpointPath: endpointPath,
-          data: data,
-          parameters: parameters,
-          headers: headers,
-        );
+        final responseCurlCommand = curlCommand;
 
         /// 401 handle
         if (statusCode == 401 &&
-            (optionsThisAttempt.extra?['isTokenRefreshed'] ?? false) != true &&
+            !tokenRefreshAttempted &&
             requestOptions.hasBearerToken) {
+          tokenRefreshAttempted = true;
           try {
             await TokenManager.refreshAccessToken();
           } catch (_) {
@@ -232,7 +236,9 @@ class DioRequestHandler {
               endpointPath: endpointPath,
               logCurl: responseCurlCommand,
               fromCache: fromCache,
-              logModel: requestOptions.logModel!,
+              logModel: logModel,
+              duration: requestStopwatch.elapsed,
+              method: methodOverride,
             );
           }
 
@@ -255,7 +261,9 @@ class DioRequestHandler {
               endpointPath: endpointPath,
               logCurl: responseCurlCommand,
               fromCache: fromCache,
-              logModel: requestOptions.logModel!,
+              logModel: logModel,
+              duration: requestStopwatch.elapsed,
+              method: methodOverride,
             );
           }
         }
@@ -267,7 +275,11 @@ class DioRequestHandler {
             endpointPath: endpointPath,
             logCurl: responseCurlCommand,
             fromCache: fromCache,
-            logModel: requestOptions.logModel!,
+            logModel: logModel,
+            headers: relevantHeaders,
+            extra: optionsThisAttempt.extra,
+            duration: requestStopwatch.elapsed,
+            method: methodOverride,
           );
         } else {
           if (!isLastAttempt &&
@@ -277,9 +289,9 @@ class DioRequestHandler {
                 null,
               )) {
             /// Create Console Log For this Atetempts
-            if (!firstAttempts && requestOptions.logModel!.defaultLog) {
+            if (logModel.defaultLog) {
               DioFlowLog(
-                logModel: requestOptions.logModel!,
+                logModel: logModel,
                 type: DioLogType.retry,
                 url: DioFlowConfig.instance.baseUrl + endpointPath,
                 method: newOptions.method,
@@ -291,6 +303,7 @@ class DioRequestHandler {
                 maxAttempts: maxAttempts,
                 statusCode: statusCode,
                 message: response.statusMessage,
+                duration: requestStopwatch.elapsed,
               ).log();
             }
             await Future.delayed(interval);
@@ -301,19 +314,14 @@ class DioRequestHandler {
               endpointPath: endpointPath,
               logCurl: responseCurlCommand,
               fromCache: fromCache,
-              logModel: requestOptions.logModel!,
+              logModel: logModel,
+              duration: requestStopwatch.elapsed,
+              method: methodOverride,
             );
           }
         }
       } on DioException catch (error) {
-        final exeptionCurlCommand = DioHndlerHelper.curlCommand(
-          methodOverride: methodOverride,
-          baseUrl: DioFlowConfig.instance.baseUrl,
-          endpointPath: endpointPath,
-          data: data,
-          parameters: parameters,
-          headers: headers,
-        );
+        final exeptionCurlCommand = curlCommand;
 
         ErrorType errorType;
         if (error.requestOptions.extra['errorType'] == 'preparation_error') {
@@ -382,47 +390,67 @@ class DioRequestHandler {
         if (error.type == DioExceptionType.cancel) {
           return FailedResponseModel.fromJson(
             {'status': 499, 'message': 'Request cancelled by user'},
-            logModel: requestOptions.logModel!,
+            logModel: logModel,
             endpointPath: endpointPath,
             logCurl: exeptionCurlCommand,
+            duration: requestStopwatch.elapsed,
+            method: methodOverride,
           );
         }
 
         if (!isLastAttempt &&
-            DioHndlerHelper.shouldRetry(null, null, error) &&
-            requestOptions.logModel!.defaultLog) {
-          DioFlowLog(
-            logModel: requestOptions.logModel!,
-            type: DioLogType.retry,
-            url: DioFlowConfig.instance.baseUrl + endpointPath,
-            method: newOptions.method,
-            data: data,
-            headers: Map<String, dynamic>.from(newOptions.headers ?? {}),
-            parameters: parameters,
-            extra: optionsThisAttempt.extra,
-            logCurl: curlCommand,
-            isCache: cacheLoad,
-            retryCount: attempt,
-            maxAttempts: maxAttempts,
-          ).log();
+            DioHndlerHelper.shouldRetry(
+              requestOptions.retryOptions,
+              error.response?.statusCode,
+              error,
+            )) {
+          if (logModel.defaultLog) {
+            DioFlowLog(
+              logModel: logModel,
+              type: DioLogType.retry,
+              url: DioFlowConfig.instance.baseUrl + endpointPath,
+              method: newOptions.method,
+              data: dataThisAttempt,
+              headers: Map<String, dynamic>.from(newOptions.headers ?? {}),
+              parameters: parameters,
+              extra: optionsThisAttempt.extra,
+              logCurl: curlCommand,
+              isCache: cacheLoad,
+              retryCount: attempt,
+              maxAttempts: maxAttempts,
+              duration: requestStopwatch.elapsed,
+            ).log();
+          }
           await Future.delayed(interval);
           continue;
         } else {
           return FailedResponseModel.fromJson(
             errorResponseData,
-            logModel: requestOptions.logModel!,
+            logModel: logModel,
             endpointPath: endpointPath,
             logCurl: exeptionCurlCommand,
+            duration: requestStopwatch.elapsed,
+            method: methodOverride,
           );
         }
+      } catch (error) {
+        return FailedResponseModel.fromJson(
+          {'status': 500, 'message': error.toString()},
+          logModel: logModel,
+          endpointPath: endpointPath,
+          logCurl: curlCommand,
+          duration: requestStopwatch.elapsed,
+          method: methodOverride,
+        );
       }
     } // end for
 
     return FailedResponseModel.fromJson(
       {'status': 500, 'message': 'Request aborted after retries'},
-      logModel: requestOptions.logModel!,
+      logModel: logModel,
       endpointPath: endpointPath,
-      logCurl: firstCurl,
+      logCurl: curlForLog(),
+      method: methodOverride,
     );
   }
 

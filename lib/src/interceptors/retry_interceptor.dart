@@ -19,50 +19,64 @@ class RetryInterceptor extends Interceptor {
     final Map<String, dynamic> extra = Map<String, dynamic>.from(
       err.requestOptions.extra,
     );
-    
-    // خواندن مقادیر پیکربندی
-    final int maxAttempts = extra['maxAttempts'] ?? 3; // مقدار پیش‌فرض ۳
-    final Duration retryInterval = extra['retryInterval'] ?? Duration(seconds: 1);
-    final int currentRetryCount = extra['retryCount'] ?? 0;
 
-    // بررسی آیا باید retry شود
-    if (_shouldRetry(err, currentRetryCount, maxAttempts)) {
+    final int maxAttempts = extra['maxAttempts'] ?? 3;
+    final Duration retryInterval =
+        extra['retryInterval'] ?? const Duration(seconds: 1);
+    final int currentRetryCount = extra['retryCount'] ?? 0;
+    final bool retryOnConnectionTimeout =
+        extra['retryOnConnectionTimeout'] ?? true;
+    final bool retryOnReceiveTimeout = extra['retryOnReceiveTimeout'] ?? true;
+
+    if (_shouldRetry(
+      err,
+      currentRetryCount,
+      maxAttempts,
+      retryOnConnectionTimeout,
+      retryOnReceiveTimeout,
+    )) {
       final int newRetryCount = currentRetryCount + 1;
-      
-      // ایجاد کپی جدید از extra با شمارشگر به‌روزرسانی شده
+
       final Map<String, dynamic> newExtra = {
         ...extra,
         'retryCount': newRetryCount,
       };
 
-      // ایجاد درخواست جدید با تنظیمات به‌روزرسانی شده
       final RequestOptions newOptions = err.requestOptions.copyWith(
         extra: newExtra,
+        data:
+            err.requestOptions.data is FormData
+                ? (err.requestOptions.data as FormData).clone()
+                : err.requestOptions.data,
       );
 
-      // انتظار برای بازه زمانی مشخص
       await Future.delayed(retryInterval);
 
       try {
-        // اجرای مجدد درخواست با عبور از تمامی اینترسپتورها
         final Response response = await dio.fetch(newOptions);
         handler.resolve(response);
-      } catch (e) {
-        // اگر retry نیز شکست خورد، خطا را به handler بعدی منتقل کن
-        handler.reject(e as DioException);
+      } on DioException catch (error) {
+        handler.reject(error);
       }
     } else {
-      // عدم retry و رد خطا
       handler.reject(err);
     }
   }
 
-  bool _shouldRetry(DioException error, int retryCount, int maxAttempts) {
+  bool _shouldRetry(
+    DioException error,
+    int retryCount,
+    int maxAttempts,
+    bool retryOnConnectionTimeout,
+    bool retryOnReceiveTimeout,
+  ) {
     return retryCount < maxAttempts &&
         error.type != DioExceptionType.cancel &&
-        (error.type == DioExceptionType.connectionTimeout ||
-            error.type == DioExceptionType.receiveTimeout ||
-            error.type == DioExceptionType.sendTimeout ||
-            error.type == DioExceptionType.connectionError);
+        ((retryOnConnectionTimeout &&
+                (error.type == DioExceptionType.connectionTimeout ||
+                    error.type == DioExceptionType.sendTimeout ||
+                    error.type == DioExceptionType.connectionError)) ||
+            (retryOnReceiveTimeout &&
+                error.type == DioExceptionType.receiveTimeout));
   }
 }

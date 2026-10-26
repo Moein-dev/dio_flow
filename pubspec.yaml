@@ -22,17 +22,12 @@ platforms:
 dependencies:
   flutter:
     sdk: flutter
-  dio: ^5.9.0
+  dio: ^5.11.0
   shared_preferences: ^2.5.3
-  log_curl_request: ^0.1.0
-  colorful_log_plus: ^1.0.8
-  http_parser: ^4.0.2
-  path: ^1.9.0
-  web: ^1.1.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^5.0.0
+  flutter_lints: ^6.0.0
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

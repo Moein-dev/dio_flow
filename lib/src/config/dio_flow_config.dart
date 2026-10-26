@@ -20,8 +20,18 @@ class DioFlowConfig {
   /// The time to wait for sending data.
   final Duration sendTimeout;
 
-  /// custom Interseptors
+  /// Custom interceptors to attach to the Dio instance.
   final List<Interceptor>? customInterceptors;
+
+  /// Whether client-side rate limiting is enabled.
+  /// Defaults to `false` to avoid blocking concurrent or rapid consecutive requests.
+  final bool enableRateLimit;
+
+  /// Maximum requests allowed within [rateLimitInterval] when [enableRateLimit] is true.
+  final int rateLimitMaxRequests;
+
+  /// Time window for rate limiting. Defaults to 1 minute.
+  final Duration rateLimitInterval;
 
   /// Private constructor to prevent direct instantiation.
   DioFlowConfig._({
@@ -30,6 +40,9 @@ class DioFlowConfig {
     this.receiveTimeout = const Duration(seconds: 30),
     this.sendTimeout = const Duration(seconds: 30),
     this.customInterceptors,
+    this.enableRateLimit = false,
+    this.rateLimitMaxRequests = 60,
+    this.rateLimitInterval = const Duration(minutes: 1),
   });
 
   /// Initializes the configuration for dio_flow package.
@@ -50,12 +63,19 @@ class DioFlowConfig {
   ///   connectTimeout - The time to wait for a connection to be established (defaults to 30 seconds)
   ///   receiveTimeout - The time to wait for receiving data (defaults to 30 seconds)
   ///   sendTimeout - The time to wait for sending data (defaults to 30 seconds)
+  ///   customInterceptors - Optional list of additional Dio interceptors
+  ///   enableRateLimit - Whether client-side rate limiting is active (defaults to false)
+  ///   rateLimitMaxRequests - Allowed request count within [rateLimitInterval] when rate limiting is enabled
+  ///   rateLimitInterval - Duration window for rate limiting (defaults to 1 minute)
   static void initialize({
     required String baseUrl,
     Duration connectTimeout = const Duration(seconds: 30),
     Duration receiveTimeout = const Duration(seconds: 30),
     Duration sendTimeout = const Duration(seconds: 30),
     List<Interceptor>? customInterceptors,
+    bool enableRateLimit = false,
+    int rateLimitMaxRequests = 60,
+    Duration rateLimitInterval = const Duration(minutes: 1),
   }) {
     _instance = DioFlowConfig._(
       baseUrl: baseUrl,
@@ -63,6 +83,9 @@ class DioFlowConfig {
       receiveTimeout: receiveTimeout,
       sendTimeout: sendTimeout,
       customInterceptors: customInterceptors,
+      enableRateLimit: enableRateLimit,
+      rateLimitMaxRequests: rateLimitMaxRequests,
+      rateLimitInterval: rateLimitInterval,
     );
   }
 

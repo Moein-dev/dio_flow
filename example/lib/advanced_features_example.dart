@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:dio_flow/dio_flow.dart';
 
 /// Example demonstrating advanced features of DioFlow package.
@@ -214,14 +216,11 @@ Future<void> fileOperationsExample() async {
   // 1. File Upload Example
   _log('1. File Upload (Simulated)');
 
-  // In a real scenario, you would use:
-  // final file = File('/path/to/your/file.txt');
-  // final uploadResponse = await FileHandler.uploadFile('upload', file);
-
-  // For demo purposes, we'll simulate the upload
-  final uploadResponse = await DioRequestHandler.post(
+  final uploadResponse = await FileHandler.uploadFile<Uint8List>(
     'upload',
-    data: {'filename': 'example.txt', 'content': 'Hello World!'},
+    {'file': Uint8List.fromList('Hello World!'.codeUnits)},
+    UploadMethodsEnum.post,
+    additionalData: {'description': 'Example text file'},
   );
 
   if (uploadResponse.isSuccess) {
@@ -272,20 +271,8 @@ Future<void> fileOperationsExample() async {
     _log('   Total size: ${data['totalSize']} bytes');
   }
 
-  // 4. Progress Tracking Example (Conceptual)
-  _log('\n4. Progress Tracking (Conceptual)');
-
-  void progressCallback(int sent, int total) {
-    final percentage = (sent / total * 100).toStringAsFixed(1);
-    _log('   Progress: $percentage% ($sent/$total bytes)');
-  }
-
-  // Simulate progress updates
-  final totalSize = 1000;
-  for (int i = 0; i <= totalSize; i += 100) {
-    progressCallback(i, totalSize);
-    await Future.delayed(const Duration(milliseconds: 50));
-  }
+  // Dio emits transport progress when available. If a platform or mock adapter
+  // emits no events, FileHandler still reports one final payload completion.
 
   MockDioFlow.disableMockMode();
   _log('\n✅ File operations example completed\n');
@@ -310,21 +297,18 @@ Future<void> realWorldExample() async {
     // 2. Get current user profile
     final profileResponse = await DioRequestHandler.get(
       'user/profile',
-      requestOptions: const RequestOptionsModel(
-        hasBearerToken: true,
-      ),
+      requestOptions: const RequestOptionsModel(hasBearerToken: true),
     );
 
     if (profileResponse.isSuccess) {
       _log('✅ Current profile loaded');
     }
 
-    // 3. Upload new avatar (in real app, you'd have an actual file)
-    // final avatarFile = File('/path/to/new/avatar.jpg');
-    // final uploadResponse = await FileHandler.uploadFile(
+    // 3. Upload new avatar using bytes (works on native and Web).
+    // final uploadResponse = await FileHandler.uploadFile<Uint8List>(
     //   'user/avatar',
-    //   avatarFile,
-    //   fieldName: 'avatar',
+    //   {'avatar': avatarBytes},
+    //   UploadMethodsEnum.post,
     //   additionalData: {'userId': '123'},
     //   onProgress: (sent, total) {
     //     _log('Upload progress: ${(sent/total*100).toStringAsFixed(1)}%');

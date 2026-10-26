@@ -47,4 +47,4 @@ class HttpMethods {
   }
 }
 
-enum UploadMethodsEnum { post, put, patch }
+enum UploadMethodsEnum { get, post, put, patch }

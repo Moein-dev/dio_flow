@@ -25,10 +25,7 @@ class DioInterceptor extends Interceptor {
             ...requestOptions.headers,
             'Authorization': 'Bearer $newToken',
           },
-          extra: {
-            ...requestOptions.extra,
-            'isRefreshTokenUsed': true,
-          },
+          extra: {...requestOptions.extra, 'isRefreshTokenUsed': true},
         );
 
         final Response retriedResponse = await dio.fetch(newOptions);

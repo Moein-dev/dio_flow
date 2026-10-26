@@ -1,7 +1,10 @@
-import 'dart:io';
+import 'dart:convert';
 import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:dio_flow/dio_flow.dart';
+import 'package:dio_flow/src/handlers/dio_hndler_helper.dart';
+import 'package:dio_flow/src/handlers/file_value_adapter_stub.dart'
+    if (dart.library.io) 'package:dio_flow/src/handlers/file_value_adapter_io.dart';
 import 'package:flutter/foundation.dart';
 
 /// Callback function for tracking upload/download progress.
@@ -44,7 +47,7 @@ class FileHandler {
   ///   methodTypes    - HTTP method (usually POST/PUT/PATCH)
   ///   additionalData - Additional form data to send with the files
   ///   requestOptions - Request configuration options
-  ///   onProgress     - Callback for tracking upload progress (not wired yet)
+  ///   onProgress     - Callback for tracking upload progress
   ///
   /// Returns:
   ///   A ResponseModel containing the upload result
@@ -63,6 +66,8 @@ class FileHandler {
   }) async {
     try {
       final formData = FormData();
+      var payloadLength = 0;
+      var progressEmitted = false;
 
       for (final entry in files.entries) {
         if (entry.value is Uint8List) {
@@ -72,39 +77,60 @@ class FileHandler {
             filename: entry.key,
           );
           formData.files.add(MapEntry(entry.key, multipartFile));
-        } else if (entry.value is File) {
-          // Handle File objects (mobile/desktop only)
-          final file = entry.value as File;
-          final multipartFile = await MultipartFile.fromFile(
-            file.path,
-            filename: file.path.split('/').last,
-          );
-          formData.files.add(MapEntry(entry.key, multipartFile));
+          payloadLength += multipartFile.length;
         } else {
-          return FailedResponseModel(
-            statusCode: 500,
-            message: 'Format Not Supported',
-            logCurl: 'Format Not Supported',
-            errorType: ErrorType.unknown,
+          final multipartFile = await multipartFileFromValue(
+            entry.value,
+            fieldName: entry.key,
           );
+          if (multipartFile == null) {
+            return FailedResponseModel(
+              statusCode: 500,
+              message: 'Format Not Supported',
+              logCurl: 'Format Not Supported',
+              errorType: ErrorType.unknown,
+            );
+          }
+          formData.files.add(MapEntry(entry.key, multipartFile));
+          payloadLength += multipartFile.length;
         }
       }
 
       if (additionalData != null) {
         additionalData.forEach((key, value) {
-          formData.fields.add(MapEntry(key, value.toString()));
+          final stringValue = value.toString();
+          formData.fields.add(MapEntry(key, stringValue));
+          payloadLength += utf8.encode(stringValue).length;
         });
       }
 
-      return _sendRequestWithMethod(
+      final response = await _sendRequestWithMethod(
         methodTypes,
         endpoint,
         data: formData,
         parameters: parameters,
         pathParameters: pathParameters,
         cancelToken: cancelToken,
-        requestOptions: requestOptions,
+        requestOptions:
+            onProgress == null
+                ? requestOptions
+                : requestOptions.copyWith(
+                  userExtra: {
+                    ...?requestOptions.customExtra,
+                    DioHndlerHelper.uploadProgressExtraKey: (
+                      int sent,
+                      int total,
+                    ) {
+                      progressEmitted = true;
+                      onProgress(sent, total);
+                    },
+                  },
+                ),
       );
+      if (onProgress != null && !progressEmitted && response.isSuccess) {
+        onProgress(payloadLength, payloadLength);
+      }
+      return response;
     } catch (e) {
       return FailedResponseModel(
         statusCode: 500,
@@ -168,7 +194,7 @@ class FileHandler {
   /// ```dart
   /// final response = await FileHandler.downloadBytes(
   ///   'files/123',
-  ///   HttpMethodsEnum.get,
+  ///   UploadMethodsEnum.post,
   ///   requestOptions: RequestOptionsModel(
   ///     responseType: ResponseType.bytes,
   ///   ),
@@ -214,7 +240,7 @@ class FileHandler {
   /// ```dart
   /// final response = await FileHandler.downloadText(
   ///   'logs/today',
-  ///   HttpMethodsEnum.get,
+  ///   UploadMethodsEnum.post,
   ///   requestOptions: RequestOptionsModel(
   ///     responseType: ResponseType.plain,
   ///   ),
@@ -222,7 +248,7 @@ class FileHandler {
   ///
   /// if (response is SuccessResponseModel) {
   ///   final text = response.data as String;
-  ///   print(text);
+  ///   // Process the downloaded text.
   /// }
   /// ```
   static Future<ResponseModel> downloadText(
@@ -261,7 +287,7 @@ class FileHandler {
   /// final file = File('/path/to/save.pdf');
   /// final response = await FileHandler.downloadAndHandle(
   ///   'files/report',
-  ///   HttpMethodsEnum.get,
+  ///   UploadMethodsEnum.post,
   ///   requestOptions: RequestOptionsModel(
   ///     responseType: ResponseType.bytes,
   ///   ),
@@ -275,7 +301,9 @@ class FileHandler {
     UploadMethodsEnum methodTypes, {
     Map<String, dynamic>? parameters,
     Map<String, dynamic>? pathParameters,
-    RequestOptionsModel requestOptions = const RequestOptionsModel(),
+    RequestOptionsModel requestOptions = const RequestOptionsModel(
+      responseType: ResponseType.bytes,
+    ),
     CancelToken? cancelToken,
     Future<void> Function(Uint8List bytes)? onBytes,
   }) async {
@@ -322,6 +350,14 @@ class FileHandler {
     RequestOptionsModel requestOptions = const RequestOptionsModel(),
   }) {
     switch (methodTypes) {
+      case UploadMethodsEnum.get:
+        return DioRequestHandler.get(
+          endpoint,
+          pathParameters: pathParameters,
+          parameters: parameters,
+          cancelToken: cancelToken,
+          requestOptions: requestOptions,
+        );
       case UploadMethodsEnum.post:
         return DioRequestHandler.post(
           endpoint,
