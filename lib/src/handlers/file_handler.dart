@@ -14,6 +14,12 @@ import 'package:flutter/foundation.dart';
 ///   total - Total number of bytes to send/receive
 typedef ProgressCallback = void Function(int sent, int total);
 
+/// Controls how List values in multipart additional data are serialized.
+enum MultipartListSerialization { singleValue, repeatedFields }
+
+/// Controls how Map values in multipart additional data are serialized.
+enum MultipartMapSerialization { stringValue, json }
+
 /// Information about file upload/download progress.
 class FileProgress {
   final int sent;
@@ -44,8 +50,11 @@ class FileHandler {
   /// Parameters:
   ///   endpoint       - The API endpoint for file upload
   ///   files          - Map of fieldName -> File/Uint8List
+  ///   fileNames      - Optional map of fieldName -> multipart filename
   ///   methodTypes    - HTTP method (usually POST/PUT/PATCH)
   ///   additionalData - Additional form data to send with the files
+  ///   listSerialization - How List values in additionalData are serialized
+  ///   mapSerialization  - How Map values in additionalData are serialized
   ///   requestOptions - Request configuration options
   ///   onProgress     - Callback for tracking upload progress
   ///
@@ -58,6 +67,11 @@ class FileHandler {
     Map<String, T> files,
     UploadMethodsEnum methodTypes, {
     Map<String, dynamic>? additionalData,
+    Map<String, String>? fileNames,
+    MultipartListSerialization listSerialization =
+        MultipartListSerialization.singleValue,
+    MultipartMapSerialization mapSerialization =
+        MultipartMapSerialization.stringValue,
     RequestOptionsModel requestOptions = const RequestOptionsModel(),
     ProgressCallback? onProgress,
     Map<String, dynamic>? parameters,
@@ -74,7 +88,7 @@ class FileHandler {
           // Handle bytes (web-compatible)
           final multipartFile = MultipartFile.fromBytes(
             entry.value as Uint8List,
-            filename: entry.key,
+            filename: fileNames?[entry.key] ?? entry.key,
           );
           formData.files.add(MapEntry(entry.key, multipartFile));
           payloadLength += multipartFile.length;
@@ -82,6 +96,7 @@ class FileHandler {
           final multipartFile = await multipartFileFromValue(
             entry.value,
             fieldName: entry.key,
+            filename: fileNames?[entry.key],
           );
           if (multipartFile == null) {
             return FailedResponseModel(
@@ -97,11 +112,25 @@ class FileHandler {
       }
 
       if (additionalData != null) {
-        additionalData.forEach((key, value) {
-          final stringValue = value.toString();
+        void addField(String key, String stringValue) {
           formData.fields.add(MapEntry(key, stringValue));
           payloadLength += utf8.encode(stringValue).length;
-        });
+        }
+
+        for (final entry in additionalData.entries) {
+          final value = entry.value;
+          if (value is List &&
+              listSerialization == MultipartListSerialization.repeatedFields) {
+            for (final item in value) {
+              addField(entry.key, item.toString());
+            }
+          } else if (value is Map &&
+              mapSerialization == MultipartMapSerialization.json) {
+            addField(entry.key, jsonEncode(value));
+          } else {
+            addField(entry.key, value.toString());
+          }
+        }
       }
 
       final response = await _sendRequestWithMethod(

@@ -15,7 +15,7 @@ A robust, developer-friendly Flutter HTTP client built on Dio that handles the h
 
 ```yaml
 dependencies:
-  dio_flow: ^3.1.1
+  dio_flow: ^3.1.2
   dio: ^5.11.0
 ```
 
@@ -314,6 +314,29 @@ final response = await FileHandler.uploadFile(
   },
 );
 ```
+
+To send a filename that differs from the multipart field name, pass a
+`fileNames` entry keyed by that field name. Additional data keeps its existing
+`toString()` serialization by default. You can opt into repeated fields for
+Lists and JSON encoding for Maps independently:
+
+```dart
+final response = await FileHandler.uploadFile(
+  '/media/upload',
+  {'avatar': bytes},
+  UploadMethodsEnum.post,
+  fileNames: {'avatar': 'avatar.jpg'},
+  additionalData: {
+    'tags': ['profile', 'public'],
+    'metadata': {'source': 'settings'},
+  },
+  listSerialization: MultipartListSerialization.repeatedFields,
+  mapSerialization: MultipartMapSerialization.json,
+);
+```
+
+This sends `avatar` as the multipart field name with `avatar.jpg` as its
+filename, repeats `tags` once per value, and sends `metadata` as a JSON string.
 
 ---
 

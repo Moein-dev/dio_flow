@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart' show ResponseType;
@@ -83,6 +84,78 @@ void main() {
     expect(adapter.requests.single.path, '/folders/a%2Fb/upload');
     expect(adapter.requests.single.headers['X-Upload'], 'profile');
   });
+
+  test(
+    'preserves legacy multipart filenames and field serialization',
+    () async {
+      MockDioFlow.disableMockMode();
+      SharedPreferences.setMockInitialValues({});
+      await ApiClient.initialize();
+      final adapter = ScriptedAdapter([
+        jsonStep({'uploaded': true}),
+      ]);
+      ApiClient.dio.httpClientAdapter = adapter;
+
+      final response = await FileHandler.uploadFile<Uint8List>(
+        '/upload',
+        {
+          'avatar': Uint8List.fromList([1, 2, 3]),
+        },
+        UploadMethodsEnum.post,
+        additionalData: {
+          'scalar': 'profile',
+          'colors': ['blue', 'green'],
+          'metadata': {'role': 'avatar'},
+        },
+      );
+
+      final body = latin1.decode(adapter.requestBodies.single);
+      expect(response.isSuccess, isTrue);
+      expect(body, contains('name="avatar"; filename="avatar"'));
+      expect(body, contains('name="scalar"\r\n\r\nprofile'));
+      expect(body, contains('name="colors"\r\n\r\n[blue, green]'));
+      expect(body, contains('name="metadata"\r\n\r\n{role: avatar}'));
+    },
+  );
+
+  test(
+    'supports custom filenames and opt-in List and Map serialization',
+    () async {
+      MockDioFlow.disableMockMode();
+      SharedPreferences.setMockInitialValues({});
+      await ApiClient.initialize();
+      final adapter = ScriptedAdapter([
+        jsonStep({'uploaded': true}),
+      ]);
+      ApiClient.dio.httpClientAdapter = adapter;
+
+      final response = await FileHandler.uploadFile<Uint8List>(
+        '/upload',
+        {
+          'avatar': Uint8List.fromList([1, 2, 3]),
+        },
+        UploadMethodsEnum.post,
+        fileNames: {'avatar': 'avatar.jpg'},
+        additionalData: {
+          'labels': ['profile', 'public'],
+          'metadata': {'role': 'avatar', 'active': true},
+        },
+        listSerialization: MultipartListSerialization.repeatedFields,
+        mapSerialization: MultipartMapSerialization.json,
+      );
+
+      final body = latin1.decode(adapter.requestBodies.single);
+      expect(response.isSuccess, isTrue);
+      expect(body, contains('name="avatar"; filename="avatar.jpg"'));
+      expect('name="labels"'.allMatches(body), hasLength(2));
+      expect(body, contains('name="labels"\r\n\r\nprofile'));
+      expect(body, contains('name="labels"\r\n\r\npublic'));
+      expect(
+        body,
+        contains('name="metadata"\r\n\r\n{"role":"avatar","active":true}'),
+      );
+    },
+  );
 
   test('downloads bytes and invokes onBytes only after success', () async {
     MockDioFlow.disableMockMode();

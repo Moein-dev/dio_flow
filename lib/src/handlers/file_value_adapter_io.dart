@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 Future<MultipartFile?> multipartFileFromValue(
   Object? value, {
   required String fieldName,
+  String? filename,
 }) async {
   if (value is! File) {
     return null;
@@ -12,6 +13,6 @@ Future<MultipartFile?> multipartFileFromValue(
 
   return MultipartFile.fromFile(
     value.path,
-    filename: value.uri.pathSegments.last,
+    filename: filename ?? value.uri.pathSegments.last,
   );
 }
