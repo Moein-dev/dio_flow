@@ -15,7 +15,7 @@ A robust, developer-friendly Flutter HTTP client built on Dio that handles the h
 
 ```yaml
 dependencies:
-  dio_flow: ^3.1.0
+  dio_flow: ^3.1.1
   dio: ^5.11.0
 ```
 
